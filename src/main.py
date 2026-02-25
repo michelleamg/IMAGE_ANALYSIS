@@ -1,21 +1,19 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-
-from models.image_model import ImageModel
-from views.main_view import MainView
-from controllers.main_controller import MainController
+from model.colormap import ImageModel
+from view.view import MainWindow
+from controller.controller import ImageController
 
 def main():
     app = QApplication(sys.argv)
-
+    app.setStyle('Fusion')
+    
     model = ImageModel()
-    view = MainView()
-    controller = MainController(model, view)
-
-    view.set_controller(controller)
+    view = MainWindow()
+    controller = ImageController(model, view)
+    
     view.show()
-
     sys.exit(app.exec_())
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
