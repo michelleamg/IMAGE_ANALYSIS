@@ -11,7 +11,7 @@ class ImageController:
     
     def load_image(self):
         filepath, _ = QFileDialog.getOpenFileName(
-            self.view, "Seleccionar imagen", "", "Imágenes (*.png *.jpg *.jpeg *.bmp)"
+            self.view, "Seleccionar imagen", "", "Imágenes (*.png *.jpg *.jpeg *.bmp)" 
         )
         
         if filepath:
@@ -32,7 +32,6 @@ class ImageController:
         
         map_name = self.view.map_combo.currentText()
         
-        # Verificar si es el mapa personalizado
         if map_name == "PERSONALIZADO":
             result = self.model.apply_personalized_map(self.current_image)
             self.current_map = 'Personalizado'

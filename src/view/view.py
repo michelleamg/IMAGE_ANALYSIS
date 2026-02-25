@@ -50,7 +50,7 @@ class MainWindow(QMainWindow):
         # 1. Cargar imagen
         load_group = QGroupBox("1. Cargar imagen")
         load_layout = QVBoxLayout()
-        self.btn_load = QPushButton("📁 Seleccionar imagen")
+        self.btn_load = QPushButton("Seleccionar imagen")
         load_layout.addWidget(self.btn_load)
         load_group.setLayout(load_layout)
         left_layout.addWidget(load_group)
@@ -61,15 +61,14 @@ class MainWindow(QMainWindow):
         
         self.map_combo = QComboBox()
         self.map_combo.addItems([
-            "JET", "HOT", "COOL", "SPRING", 
-            "SUMMER", "WINTER", "HSV", "PARULA",
+            "TWILIGHT", "TURBO", "VIRDIS", "PINK", 
+            "INFERNO", "WINTER", "HSV", "PARULA",
             "PERSONALIZADO"
-        ])
+        ])#Agregar opción para mapa personalizado
         maps_layout.addWidget(QLabel("Selecciona un mapa:"))
         maps_layout.addWidget(self.map_combo)
         
-        # Botón aplicar mapa (¡ESTE FALTABA!)
-        self.btn_apply = QPushButton("🎨 Aplicar mapa")
+        self.btn_apply = QPushButton("Aplicar")
         maps_layout.addWidget(self.btn_apply)
         
         maps_group.setLayout(maps_layout)
@@ -85,7 +84,7 @@ class MainWindow(QMainWindow):
         
         left_layout.addStretch()
         
-        # Panel derecho (visualización)
+        # Panel derecho
         right = QWidget()
         right_layout = QVBoxLayout(right)
         
@@ -100,7 +99,7 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self.tabs)
         
         # Barra de estado
-        self.status_label = QLabel("📌 Listo")
+        self.status_label = QLabel("Cargar una imagen")
         self.status_label.setStyleSheet("background-color: #f0f0f0; padding: 5px;")
         right_layout.addWidget(self.status_label)
         
@@ -121,4 +120,4 @@ class MainWindow(QMainWindow):
         self.tabs.setCurrentIndex(1)
     
     def show_status(self, msg):
-        self.status_label.setText(f"{msg}")
+        self.status_label.setText(f"{msg}") 
