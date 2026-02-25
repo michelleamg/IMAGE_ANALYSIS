@@ -1,6 +1,9 @@
-#Autor: Alejandra Michelle Mateo Garcia
-#Fecha: 25 de febrero del 2026
-#version: 1.0
+"""
+- Autor: Alejandra Michelle Mateo Garcia
+- Fecha: 20 de febrero del 2026
+- version: 1.4
+- Descripción: Practica 1 de Analisis de Imagenes, usando libreria OpenCV y creando mi propio mapa de de color personalizado.
+"""
 import sys
 from PyQt5.QtWidgets import QApplication
 from model.colormap import ImageModel

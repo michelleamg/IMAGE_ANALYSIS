@@ -19,7 +19,7 @@ class ImageModel:
             "PARULA": cv2.COLORMAP_PARULA
         }
         
-        # Mapa 
+        # Mapa B G R para openCV
         colores_personalizado = [
             (0.4, 0.0, 0.6),   # Morado profundo
             (0.6, 0.2, 0.8),   # Morado medio
