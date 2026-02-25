@@ -34,8 +34,8 @@ class ImageController:
         
         # Verificar si es el mapa personalizado
         if map_name == "PERSONALIZADO":
-            result = self.model.apply_pastel_map(self.current_image)
-            self.current_map = 'PASTEL'
+            result = self.model.apply_personalized_map(self.current_image)
+            self.current_map = 'Personalizado'
             map_display = "Personalizado"
         else:
             result = self.model.apply_colormap(self.current_image, map_name)
