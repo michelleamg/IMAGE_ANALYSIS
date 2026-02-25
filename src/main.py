@@ -1,3 +1,6 @@
+#Autor: Alejandra Michelle Mateo Garcia
+#Fecha: 25 de febrero del 2026
+#version: 1.0
 import sys
 from PyQt5.QtWidgets import QApplication
 from model.colormap import ImageModel
