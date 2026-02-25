@@ -2,7 +2,10 @@
 - Autor: Alejandra Michelle Mateo Garcia
 - Fecha: 20 de febrero del 2026
 - version: 1.4
-- Descripción: Practica 1 de Analisis de Imagenes, usando libreria OpenCV y creando mi propio mapa de de color personalizado.
+- Descripción: Practica 1 -"Creando mi mapa de color" de Analisis de Imagenes, usando libreria OpenCV y creando mi propio mapa de de color personalizado con la arquitectura MVC.
+- Escuela: ESCOM-IPN
+- Especialidad: Vision por computadora
+- Materia: Analisis de Imagenes
 """
 import sys
 from PyQt5.QtWidgets import QApplication
