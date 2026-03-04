@@ -1,11 +1,18 @@
 """
-- Autor: Alejandra Michelle Mateo Garcia
+- Autor: Alejandra Michelle Mateo Garcia & Leyva Triana Isis Valeria
 - Fecha: 20 de febrero del 2026
-- version: 1.4
-- Descripción: Practica 1 -"Creando mi mapa de color" de Analisis de Imagenes, usando libreria OpenCV y creando mi propio mapa de de color personalizado con la arquitectura MVC.
+- Versión: 2.0
+- Descripción: Práctica 1 - "Explorando la Imagen Digital con Python"
+               Implementación completa incluyendo:
+               ✓ Lectura de imágenes (OpenCV)
+               ✓ Separación de componentes RGB
+               ✓ Escalamiento a grises
+               ✓ Mapas de color (OpenCV + personalizado morado-fucsia)
+               ✓ Binarización (fijo, Otsu, adaptativo)
+               ✓ Histogramas de intensidad
+               ✓ Interfaz gráfica con PyQt5 (MVC)
 - Escuela: ESCOM-IPN
-- Especialidad: Vision por computadora
-- Materia: Analisis de Imagenes
+- Materia: Análisis de Imágenes
 """
 import sys
 from PyQt5.QtWidgets import QApplication
@@ -14,6 +21,7 @@ from view.view import MainWindow
 from controller.controller import ImageController
 
 def main():
+    # Arranca la aplicación Qt y conecta modelo, vista y controlador
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
     
