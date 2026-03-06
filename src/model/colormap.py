@@ -1,7 +1,7 @@
 """Modelo del programa, maneja la carga y procesamiento de imágenes.
 - Autor: Alejandra Michelle Mateo Garcia  & Leyva Triana Isis Valeria 
 - Fecha: 20 de febrero del 2026
-- Versión: 2.0
+- Versión: 2.2
 - Descripción: Práctica 1 - "Explorando la Imagen Digital con Python"
                Implementación completa incluyendo:
                ✓ Lectura de imágenes (OpenCV)
@@ -13,6 +13,11 @@
                ✓ Interfaz gráfica con PyQt5 (MVC)
 - Escuela: ESCOM-IPN
 - Materia: Análisis de Imágenes
+Librerias utilizadas:
+- PyQt5: Para la construcción de la interfaz gráfica (widgets, layouts, señales)
+- Matplotlib: Para la visualización de histogramas dentro de la aplicación
+- OpenCV: Para la manipulación y procesamiento de imágenes (convertir a QImage,
+    aplicar mapas de color, etc.)
 """
 import cv2
 import numpy as np

@@ -13,6 +13,11 @@
                ✓ Interfaz gráfica con PyQt5 (MVC)
 - Escuela: ESCOM-IPN
 - Materia: Análisis de Imágenes
+| Librerias utilizadas:
+- PyQt5: Para la construcción de la interfaz gráfica (widgets, layouts, señales)
+- Matplotlib: Para la visualización de histogramas dentro de la aplicación
+- OpenCV: Para la manipulación y procesamiento de imágenes (convertir a QImage,
+    aplicar mapas de color, etc.)
 """
 import sys
 from PyQt5.QtWidgets import QApplication

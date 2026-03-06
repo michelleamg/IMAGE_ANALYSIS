@@ -1,7 +1,7 @@
 """Vista del programa, define la interfaz gráfica y los widgets.
 - Autor: Alejandra Michelle Mateo Garcia & Leyva Triana Isis Valeria
 - Fecha: 20 de febrero del 2026
-- Versión: 2.0
+- Versión: 2.2
 - Descripción: Práctica 1 - "Explorando la Imagen Digital con Python"
                Implementación completa incluyendo:
                ✓ Lectura de imágenes (OpenCV)

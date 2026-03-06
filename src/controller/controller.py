@@ -1,13 +1,9 @@
 """Controlador del programa, maneja la lógica de interacción entre el modelo y la vista.
 - Autor: Alejandra Michelle Mateo Garcia & Leyva Triana Isis Valeria
 - Fecha: 20 de febrero del 2026
-- Versión: 2.0
-- Descripción: Práctica 1 - "Explorando la Imagen Digital con Python
--liberias utilizadas:
-- PyQt5: Para la construcción de la interfaz gráfica (widgets, layouts, señales)    
-- Matplotlib: Para la visualización de histogramas dentro de la aplicación
-- OpenCV: Para la manipulación y procesamiento de imágenes (convertir a QImage,
-    aplicar mapas de color, etc.)
+- Versión: 2.3
+- Descripción: Práctica 1 - "Explorando la Imagen Digital con Python"
+               Versión mejorada con estadísticas de histograma
 - Escuela: ESCOM-IPN
 - Materia: Análisis de Imágenes
 """
@@ -144,112 +140,115 @@ class ImageController:
                 cv_img_bgr = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
                 cv2.imwrite(filepath, cv_img_bgr)
                 self.view.show_status(f"Guardado: {os.path.basename(filepath)}")
-
-    def show_histogram(self):
-        # Muestra histograma de la imagen según pestaña y mapa activo
-        """Muestra el histograma según el tipo de imagen actual"""
-        if not self.current_image:
-            QMessageBox.warning(self.view, "Aviso", "Primero carga una imagen")
-            return
+    
+    # ===== NUEVA FUNCIÓN: Calcular estadísticas del histograma =====
+    def calculate_histogram_stats(self, hist_data):
+        """
+        Calcula estadísticas descriptivas a partir de los datos del histograma
+        Retorna: media, varianza, desviación estándar, asimetría, curtosis,
+                energía, entropía, y percentiles
+        """
+        if hist_data is None:
+            return None
         
-        # Verificar qué pestaña está activa
-        current_tab = self.view.tabs.currentIndex()
-        
-        if current_tab == 0:  # Pestaña Original
-            # Mostrar histograma RGB de la imagen original a color
-            hists = self.model.get_histogram_rgb(self.current_image)
-            img = self.model.get_image(self.current_image)
-            
-            fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-            fig.suptitle(f"Histograma RGB - {self.current_image}", fontsize=14)
-            
-            # Imagen original
-            axes[0].imshow(img)
-            axes[0].set_title('Imagen original a color')
-            axes[0].axis('off')
-            
-            # Histograma RGB
-            axes[1].plot(hists['r'], color='red', alpha=0.7, label='Rojo')
-            axes[1].plot(hists['g'], color='green', alpha=0.7, label='Verde')
-            axes[1].plot(hists['b'], color='blue', alpha=0.7, label='Azul')
-            axes[1].set_title('Histograma RGB')
-            axes[1].set_xlabel('Nivel de intensidad')
-            axes[1].set_ylabel('Frecuencia')
-            axes[1].legend()
-            axes[1].grid(True, alpha=0.3)
-            
-        else:  # Pestaña Resultado
-            # Verificar qué tipo de resultado es
-            if self.current_map and 'BINARIA' in self.current_map:
-                # Si es binarizada, mostrar histograma simple
-                hist = self.model.get_histogram_gray(self.current_image)
-                img_result = self.model.get_result(self.current_image, self.current_map)
-                
-                fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-                fig.suptitle(f"Histograma - Imagen Binarizada", fontsize=14)
-                
-                axes[0].imshow(img_result)
-                axes[0].set_title('Imagen binarizada')
-                axes[0].axis('off')
-                
-                axes[1].plot(hist, color='black')
-                axes[1].fill_between(range(256), hist, alpha=0.3, color='gray')
-                axes[1].set_title('Histograma de grises')
-                axes[1].set_xlabel('Nivel de gris')
-                axes[1].set_ylabel('Frecuencia')
-                axes[1].grid(True, alpha=0.3)
-                
-            elif self.current_map:
-                # Si es un mapa de color, mostrar histograma RGB del resultado
-                # Convertir resultado a RGB para histograma
-                img_result = self.model.get_result(self.current_image, self.current_map)
-                img_result_bgr = cv2.cvtColor(img_result, cv2.COLOR_RGB2BGR)
-                
-                hist_r = cv2.calcHist([img_result_bgr], [2], None, [256], [0, 256])  # Rojo en BGR es canal 2
-                hist_g = cv2.calcHist([img_result_bgr], [1], None, [256], [0, 256])  # Verde es canal 1
-                hist_b = cv2.calcHist([img_result_bgr], [0], None, [256], [0, 256])  # Azul es canal 0
-                
-                fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-                fig.suptitle(f"Histograma RGB - {self.current_map}", fontsize=14)
-                
-                axes[0].imshow(img_result)
-                axes[0].set_title(f'Imagen con mapa {self.current_map}')
-                axes[0].axis('off')
-                
-                axes[1].plot(hist_r, color='red', alpha=0.7, label='Rojo')
-                axes[1].plot(hist_g, color='green', alpha=0.7, label='Verde')
-                axes[1].plot(hist_b, color='blue', alpha=0.7, label='Azul')
-                axes[1].set_title('Histograma RGB')
-                axes[1].set_xlabel('Nivel de intensidad')
-                axes[1].set_ylabel('Frecuencia')
-                axes[1].legend()
-                axes[1].grid(True, alpha=0.3)
-                
+        # Asegurar que sea un array de numpy
+        if isinstance(hist_data, dict):
+            # Para histogramas RGB, usar el canal de intensidad promedio
+            if 'r' in hist_data and 'g' in hist_data and 'b' in hist_data:
+                # Promediar los histogramas de los tres canales
+                hist = (hist_data['r'] + hist_data['g'] + hist_data['b']) / 3
             else:
-                # Si no hay resultado, mostrar histograma de grises
-                hist = self.model.get_histogram_gray(self.current_image)
-                img_gray = self.model.get_gray_image(self.current_image)
-                
-                fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-                fig.suptitle(f"Histograma - Escala de Grises", fontsize=14)
-                
-                axes[0].imshow(img_gray)
-                axes[0].set_title('Imagen en grises')
-                axes[0].axis('off')
-                
-                axes[1].plot(hist, color='black')
-                axes[1].fill_between(range(256), hist, alpha=0.3, color='gray')
-                axes[1].set_title('Histograma de grises')
-                axes[1].set_xlabel('Nivel de gris')
-                axes[1].set_ylabel('Frecuencia')
-                axes[1].grid(True, alpha=0.3)
+                return None
+        else:
+            hist = hist_data
         
-        plt.tight_layout()
-        plt.show()
-        self.view.show_status("Histograma mostrado")
+        # Normalizar el histograma para obtener probabilidades
+        hist = hist.astype(np.float64)
+        total_pixels = np.sum(hist)
+        if total_pixels == 0:
+            return None
+        
+        prob = hist / total_pixels
+        niveles = np.arange(256)
+        
+        # Media
+        media = np.sum(niveles * prob)
+        
+        # Varianza y desviación estándar
+        varianza = np.sum(((niveles - media) ** 2) * prob)
+        desviacion = np.sqrt(varianza)
+        
+        # Asimetría (skewness)
+        asimetria = np.sum(((niveles - media) ** 3) * prob) / (desviacion ** 3) if desviacion > 0 else 0
+        
+        # Curtosis (kurtosis)
+        curtosis = np.sum(((niveles - media) ** 4) * prob) / (desviacion ** 4) if desviacion > 0 else 0
+        curtosis = curtosis - 3  # Curtosis con referencia a la normal
+        
+        # Energía (uniformidad)
+        energia = np.sum(prob ** 2)
+        
+        # Entropía
+        entropia = -np.sum(prob * np.log2(prob + 1e-10))  # +1e-10 para evitar log(0)
+        
+        # Percentiles importantes
+        prob_acum = np.cumsum(prob)
+        percentil_25 = np.searchsorted(prob_acum, 0.25)
+        percentil_50 = np.searchsorted(prob_acum, 0.50)  # Mediana
+        percentil_75 = np.searchsorted(prob_acum, 0.75)
+        
+        # Moda (valor más frecuente)
+        moda = np.argmax(hist)
+        
+        # Rango dinámico
+        niveles_no_cero = niveles[hist > 0]
+        rango_dinamico = niveles_no_cero[-1] - niveles_no_cero[0] if len(niveles_no_cero) > 0 else 0
+        
+        stats = {
+            'media': media,
+            'mediana': percentil_50,
+            'varianza': varianza,
+            'desviacion': desviacion,
+            'asimetria': asimetria,
+            'curtosis': curtosis,
+            'energia': energia,
+            'entropia': entropia,
+            'moda': moda,
+            'percentil_25': percentil_25,
+            'percentil_75': percentil_75,
+            'rango_dinamico': rango_dinamico,
+            'min': niveles_no_cero[0] if len(niveles_no_cero) > 0 else 0,
+            'max': niveles_no_cero[-1] if len(niveles_no_cero) > 0 else 0
+        }
+        
+        return stats
+    
+    # ===== NUEVA FUNCIÓN: Formatear estadísticas para mostrar =====
+    def format_stats_text(self, stats, channel_name=""):
+        """Convierte las estadísticas en texto formateado para mostrar"""
+        if stats is None:
+            return "No hay datos suficientes"
+        
+        text = f"📊 Estadísticas {channel_name}:\n"
+        text += f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        text += f"Media: {stats['media']:.2f}\n"
+        text += f"Mediana: {stats['mediana']:.1f}\n"
+        text += f"Moda: {stats['moda']}\n"
+        text += f"Varianza: {stats['varianza']:.2f}\n"
+        text += f"Desviación estándar: {stats['desviacion']:.2f}\n"
+        text += f"Asimetría: {stats['asimetria']:.3f}\n"
+        text += f"Curtosis: {stats['curtosis']:.3f}\n"
+        text += f"Energía: {stats['energia']:.6f}\n"
+        text += f"Entropía: {stats['entropia']:.3f} bits\n"
+        text += f"Rango dinámico: [{stats['min']}, {stats['max']}]\n"
+        text += f"Percentil 25: {stats['percentil_25']}\n"
+        text += f"Percentil 75: {stats['percentil_75']}\n"
+        
+        return text
+    
     def show_histogram(self):
         # Variante optimizada que obtiene histogramas según pestaña y tipo de mapa
-        """Muestra el histograma según el tipo de imagen actual"""
+        """Muestra el histograma según el tipo de imagen actual con estadísticas"""
         if not self.current_image:
             QMessageBox.warning(self.view, "Aviso", "Primero carga una imagen")
             return
@@ -265,23 +264,52 @@ class ImageController:
                 
             img = self.model.get_image(self.current_image)
             
-            fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-            fig.suptitle(f"Histograma RGB - {self.current_image}", fontsize=14)
+            # Calcular estadísticas para cada canal
+            stats_r = self.calculate_histogram_stats(hists['r'])
+            stats_g = self.calculate_histogram_stats(hists['g'])
+            stats_b = self.calculate_histogram_stats(hists['b'])
             
-            # Imagen original
-            axes[0].imshow(img)
-            axes[0].set_title('Imagen original a color')
-            axes[0].axis('off')
+            # Crear figura con 2 filas: imagen + histograma y estadísticas
+            fig = plt.figure(figsize=(14, 10))
+            fig.suptitle(f"Análisis de Histograma - {self.current_image}", fontsize=14, fontweight='bold')
             
-            # Histograma RGB
-            axes[1].plot(hists['r'], color='red', alpha=0.7, label='Rojo', linewidth=1.5)
-            axes[1].plot(hists['g'], color='green', alpha=0.7, label='Verde', linewidth=1.5)
-            axes[1].plot(hists['b'], color='blue', alpha=0.7, label='Azul', linewidth=1.5)
-            axes[1].set_title('Histograma RGB')
-            axes[1].set_xlabel('Nivel de intensidad (0-255)')
-            axes[1].set_ylabel('Frecuencia')
-            axes[1].legend()
-            axes[1].grid(True, alpha=0.3)
+            # Grid: 2 filas, 3 columnas
+            gs = fig.add_gridspec(2, 3, height_ratios=[1, 1.2], hspace=0.3, wspace=0.3)
+            
+            # Fila 1: Imagen original y histogramas
+            ax_img = fig.add_subplot(gs[0, :2])
+            ax_img.imshow(img)
+            ax_img.set_title('Imagen original a color')
+            ax_img.axis('off')
+            
+            ax_hist = fig.add_subplot(gs[0, 2])
+            ax_hist.plot(hists['r'], color='red', alpha=0.7, label='Rojo', linewidth=1.5)
+            ax_hist.plot(hists['g'], color='green', alpha=0.7, label='Verde', linewidth=1.5)
+            ax_hist.plot(hists['b'], color='blue', alpha=0.7, label='Azul', linewidth=1.5)
+            ax_hist.set_title('Histograma RGB')
+            ax_hist.set_xlabel('Nivel de intensidad')
+            ax_hist.set_ylabel('Frecuencia')
+            ax_hist.legend(fontsize=8)
+            ax_hist.grid(True, alpha=0.3)
+            
+            # Fila 2: Estadísticas para cada canal
+            ax_stats_r = fig.add_subplot(gs[1, 0])
+            ax_stats_r.axis('off')
+            ax_stats_r.text(0.1, 0.95, self.format_stats_text(stats_r, "Canal Rojo"), 
+                          transform=ax_stats_r.transAxes, fontsize=9, fontfamily='monospace',
+                          verticalalignment='top', bbox=dict(boxstyle='round', facecolor='#ffeeee', alpha=0.8))
+            
+            ax_stats_g = fig.add_subplot(gs[1, 1])
+            ax_stats_g.axis('off')
+            ax_stats_g.text(0.1, 0.95, self.format_stats_text(stats_g, "Canal Verde"), 
+                          transform=ax_stats_g.transAxes, fontsize=9, fontfamily='monospace',
+                          verticalalignment='top', bbox=dict(boxstyle='round', facecolor='#eeffee', alpha=0.8))
+            
+            ax_stats_b = fig.add_subplot(gs[1, 2])
+            ax_stats_b.axis('off')
+            ax_stats_b.text(0.1, 0.95, self.format_stats_text(stats_b, "Canal Azul"), 
+                          transform=ax_stats_b.transAxes, fontsize=9, fontfamily='monospace',
+                          verticalalignment='top', bbox=dict(boxstyle='round', facecolor='#eeeeff', alpha=0.8))
             
         else:  # Pestaña Resultado
             if self.current_map:
@@ -295,60 +323,138 @@ class ImageController:
                 
                 # Determinar título según tipo de resultado
                 if 'BINARIA' in self.current_map:
-                    titulo = f"Histograma - {self.current_map}"
-                    color_titulo = 'black'
+                    titulo = f"Análisis de Histograma - {self.current_map}"
                 else:
-                    titulo = f"Histograma RGB - {self.current_map}"
-                    color_titulo = 'purple'
+                    titulo = f"Análisis de Histograma RGB - {self.current_map}"
                 
-                fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-                fig.suptitle(titulo, fontsize=14, color=color_titulo)
+                # Crear figura
+                fig = plt.figure(figsize=(14, 8))
+                fig.suptitle(titulo, fontsize=14, fontweight='bold')
                 
-                # Imagen resultado
-                axes[0].imshow(img_result)
-                axes[0].set_title(f'Imagen con {self.current_map}')
-                axes[0].axis('off')
-                
-                # Histograma
                 if 'BINARIA' in self.current_map:
-                    # Para binarizada, mostrar histograma simple (solo 0 y 255)
+                    # Para binarizada, usar solo estadísticas del histograma de intensidad
                     hist = hists['r']  # Usamos cualquier canal (son iguales)
-                    axes[1].bar([0, 255], [hist[0], hist[255]], 
-                            color=['black', 'white'], edgecolor='black', alpha=0.7)
-                    axes[1].set_title('Histograma (0 = Negro, 255 = Blanco)')
-                    axes[1].set_xlabel('Valor de píxel')
-                    axes[1].set_ylabel('Frecuencia')
+                    stats = self.calculate_histogram_stats(hist)
+                    
+                    # Grid: 2 filas, 2 columnas
+                    gs = fig.add_gridspec(2, 2, height_ratios=[1, 1], hspace=0.3, wspace=0.3)
+                    
+                    # Imagen resultado
+                    ax_img = fig.add_subplot(gs[0, 0])
+                    ax_img.imshow(img_result)
+                    ax_img.set_title(f'Imagen binarizada ({self.current_map.split("_")[1]})')
+                    ax_img.axis('off')
+                    
+                    # Histograma
+                    ax_hist = fig.add_subplot(gs[0, 1])
+                    ax_hist.bar([0, 255], [hist[0], hist[255]], 
+                              color=['black', 'white'], edgecolor='black', alpha=0.7, width=50)
+                    ax_hist.set_title('Histograma (0 = Negro, 255 = Blanco)')
+                    ax_hist.set_xlabel('Valor de píxel')
+                    ax_hist.set_ylabel('Frecuencia')
+                    ax_hist.grid(True, alpha=0.3)
+                    
+                    # Estadísticas
+                    ax_stats = fig.add_subplot(gs[1, :])
+                    ax_stats.axis('off')
+                    ax_stats.text(0.5, 0.5, self.format_stats_text(stats, ""), 
+                                transform=ax_stats.transAxes, fontsize=10, fontfamily='monospace',
+                                horizontalalignment='center', verticalalignment='center',
+                                bbox=dict(boxstyle='round', facecolor='#f0f0f0', alpha=0.9))
+                    
                 else:
-                    # Para mapas de color, mostrar RGB
-                    axes[1].plot(hists['r'], color='red', alpha=0.7, label='Rojo', linewidth=1.5)
-                    axes[1].plot(hists['g'], color='green', alpha=0.7, label='Verde', linewidth=1.5)
-                    axes[1].plot(hists['b'], color='blue', alpha=0.7, label='Azul', linewidth=1.5)
-                    axes[1].set_title('Histograma RGB')
-                    axes[1].set_xlabel('Nivel de intensidad (0-255)')
-                    axes[1].set_ylabel('Frecuencia')
-                    axes[1].legend()
-                
-                axes[1].grid(True, alpha=0.3)
+                    # Para mapas de color, mostrar estadísticas RGB
+                    stats_r = self.calculate_histogram_stats(hists['r'])
+                    stats_g = self.calculate_histogram_stats(hists['g'])
+                    stats_b = self.calculate_histogram_stats(hists['b'])
+                    
+                    # Grid: 2 filas, 3 columnas
+                    gs = fig.add_gridspec(2, 3, height_ratios=[1, 1.2], hspace=0.3, wspace=0.3)
+                    
+                    # Imagen resultado
+                    ax_img = fig.add_subplot(gs[0, :2])
+                    ax_img.imshow(img_result)
+                    ax_img.set_title(f'Imagen con mapa {self.current_map}')
+                    ax_img.axis('off')
+                    
+                    # Histograma RGB
+                    ax_hist = fig.add_subplot(gs[0, 2])
+                    ax_hist.plot(hists['r'], color='red', alpha=0.7, label='Rojo', linewidth=1.5)
+                    ax_hist.plot(hists['g'], color='green', alpha=0.7, label='Verde', linewidth=1.5)
+                    ax_hist.plot(hists['b'], color='blue', alpha=0.7, label='Azul', linewidth=1.5)
+                    ax_hist.set_title('Histograma RGB')
+                    ax_hist.set_xlabel('Nivel de intensidad')
+                    ax_hist.set_ylabel('Frecuencia')
+                    ax_hist.legend(fontsize=8)
+                    ax_hist.grid(True, alpha=0.3)
+                    
+                    # Estadísticas para cada canal
+                    ax_stats_r = fig.add_subplot(gs[1, 0])
+                    ax_stats_r.axis('off')
+                    ax_stats_r.text(0.1, 0.95, self.format_stats_text(stats_r, "Canal Rojo"), 
+                                  transform=ax_stats_r.transAxes, fontsize=9, fontfamily='monospace',
+                                  verticalalignment='top', bbox=dict(boxstyle='round', facecolor='#ffeeee', alpha=0.8))
+                    
+                    ax_stats_g = fig.add_subplot(gs[1, 1])
+                    ax_stats_g.axis('off')
+                    ax_stats_g.text(0.1, 0.95, self.format_stats_text(stats_g, "Canal Verde"), 
+                                  transform=ax_stats_g.transAxes, fontsize=9, fontfamily='monospace',
+                                  verticalalignment='top', bbox=dict(boxstyle='round', facecolor='#eeffee', alpha=0.8))
+                    
+                    ax_stats_b = fig.add_subplot(gs[1, 2])
+                    ax_stats_b.axis('off')
+                    ax_stats_b.text(0.1, 0.95, self.format_stats_text(stats_b, "Canal Azul"), 
+                                  transform=ax_stats_b.transAxes, fontsize=9, fontfamily='monospace',
+                                  verticalalignment='top', bbox=dict(boxstyle='round', facecolor='#eeeeff', alpha=0.8))
                 
             else:
                 # Si no hay mapa seleccionado, mostrar histograma de grises
                 hist = self.model.get_histogram_gray(self.current_image)
                 img_gray = self.model.get_gray_image(self.current_image)
                 
-                fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-                fig.suptitle("Histograma - Escala de Grises", fontsize=14)
+                # Calcular estadísticas
+                stats = self.calculate_histogram_stats(hist)
                 
-                axes[0].imshow(img_gray)
-                axes[0].set_title('Imagen en grises')
-                axes[0].axis('off')
+                # Crear figura
+                fig = plt.figure(figsize=(14, 8))
+                fig.suptitle("Análisis de Histograma - Escala de Grises", fontsize=14, fontweight='bold')
                 
-                axes[1].plot(hist, color='black', linewidth=1.5)
-                axes[1].fill_between(range(256), hist, alpha=0.3, color='gray')
-                axes[1].set_title('Histograma de intensidades')
-                axes[1].set_xlabel('Nivel de gris (0-255)')
-                axes[1].set_ylabel('Frecuencia')
-                axes[1].grid(True, alpha=0.3)
+                # Grid: 2 filas, 2 columnas
+                gs = fig.add_gridspec(2, 2, height_ratios=[1, 1], hspace=0.3, wspace=0.3)
+                
+                # Imagen en grises
+                ax_img = fig.add_subplot(gs[0, 0])
+                ax_img.imshow(img_gray, cmap='gray')
+                ax_img.set_title('Imagen en escala de grises')
+                ax_img.axis('off')
+                
+                # Histograma
+                ax_hist = fig.add_subplot(gs[0, 1])
+                ax_hist.plot(hist, color='black', linewidth=1.5)
+                ax_hist.fill_between(range(256), hist, alpha=0.3, color='gray')
+                ax_hist.set_title('Histograma de intensidades')
+                ax_hist.set_xlabel('Nivel de gris')
+                ax_hist.set_ylabel('Frecuencia')
+                ax_hist.grid(True, alpha=0.3)
+                
+                # Líneas verticales para estadísticas importantes
+                if stats:
+                    ax_hist.axvline(x=stats['media'], color='red', linestyle='--', linewidth=2, 
+                                   label=f"Media: {stats['media']:.1f}")
+                    ax_hist.axvline(x=stats['mediana'], color='green', linestyle=':', linewidth=2, 
+                                   label=f"Mediana: {stats['mediana']}")
+                    ax_hist.axvline(x=stats['moda'], color='blue', linestyle='-.', linewidth=2, 
+                                   label=f"Moda: {stats['moda']}")
+                    ax_hist.legend(fontsize=8)
+                
+                # Estadísticas detalladas
+                ax_stats = fig.add_subplot(gs[1, :])
+                ax_stats.axis('off')
+                ax_stats.text(0.5, 0.5, self.format_stats_text(stats, "Intensidad"), 
+                            transform=ax_stats.transAxes, fontsize=10, fontfamily='monospace',
+                            horizontalalignment='center', verticalalignment='center',
+                            bbox=dict(boxstyle='round', facecolor='#f0f0f0', alpha=0.9))
         
         plt.tight_layout()
         plt.show()
-        self.view.show_status("Histograma mostrado")
+        self.view.show_status("Histograma con estadísticas mostrado")
