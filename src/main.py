@@ -23,6 +23,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from model.colormap import ImageModel
 from view.view import MainWindow
+from view.rgb_window import RGBComponentsWindow
 from controller.controller import ImageController
 
 def main():

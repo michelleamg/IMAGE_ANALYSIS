@@ -12,6 +12,7 @@ import os
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
+from view.rgb_window import RGBComponentsWindow
 
 class ImageController:
     def __init__(self, model, view):
@@ -57,33 +58,18 @@ class ImageController:
             self.view.show_status("Imagen convertida a escala de grises")
     
     def show_rgb_components(self):
-        # Visualiza cada canal R, G y B en un subplot
-        """Muestra los componentes RGB por separado"""
+        """Muestra los componentes RGB por separado en ventanas de PyQt5"""
         if not self.current_image:
             QMessageBox.warning(self.view, "Aviso", "Primero carga una imagen")
             return
         
         r, g, b = self.model.get_rgb_components(self.current_image)
         
-        fig, axes = plt.subplots(1, 3, figsize=(12, 4))
-        fig.suptitle(f"Componentes RGB - {self.current_image}", fontsize=14)
+        # Crear y mostrar la ventana de componentes RGB
+        self.rgb_window = RGBComponentsWindow(r, g, b, self.current_image)
+        self.rgb_window.show()
         
-        axes[0].imshow(r, cmap='Reds')
-        axes[0].set_title('Componente Rojo (R)')
-        axes[0].axis('off')
-        
-        axes[1].imshow(g, cmap='Greens')
-        axes[1].set_title('Componente Verde (G)')
-        axes[1].axis('off')
-        
-        axes[2].imshow(b, cmap='Blues')
-        axes[2].set_title('Componente Azul (B)')
-        axes[2].axis('off')
-        
-        plt.tight_layout()
-        plt.show()
-        
-        self.view.show_status("Componentes RGB mostrados")
+        self.view.show_status("Componentes RGB mostrados en ventanas separadas")
     
     def apply_map(self):
         # Aplica el mapa de color elegido (OpenCV o personalizado)
