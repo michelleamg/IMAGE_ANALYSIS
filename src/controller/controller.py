@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 from view.rgb_window import RGBComponentsWindow
+from model.color_models import ColorModels
+from view.color_models_window import ColorModelWindow
 
 class ImageController:
     def __init__(self, model, view):
@@ -444,3 +446,62 @@ class ImageController:
         plt.tight_layout()
         plt.show()
         self.view.show_status("Histograma con estadísticas mostrado")
+    
+    def apply_color_model(self):
+        """Aplica transformación a diferentes modelos de color"""
+        if not self.current_image:
+            QMessageBox.warning(self.view, "Aviso", "Primero carga una imagen")
+            return
+        
+        model_name = self.view.models_combo.currentText()
+        img_rgb = self.model.get_image(self.current_image)
+        
+        if img_rgb is None:
+            return
+        
+        model_data = None
+        
+        try:
+            if "RGB" in model_name:
+                # Para RGB, solo mostrar los canales originales
+                r, g, b = cv2.split(img_rgb)
+                model_data = {
+                    'r': r, 'g': g, 'b': b,
+                    'combined': img_rgb.copy()
+                }
+                display_name = "RGB"
+            
+            elif "CMYK" in model_name:
+                model_data = ColorModels.rgb_to_cmyk(img_rgb)
+                display_name = "CMYK"
+            
+            elif "HSV" in model_name:
+                model_data = ColorModels.rgb_to_hsv(img_rgb)
+                display_name = "HSV"
+            
+            elif "HSI" in model_name:
+                model_data = ColorModels.rgb_to_hsi(img_rgb)
+                display_name = "HSI"
+            
+            elif "YUV" in model_name:
+                model_data = ColorModels.rgb_to_yuv(img_rgb)
+                display_name = "YUV"
+            
+            elif "LAB" in model_name:
+                model_data = ColorModels.rgb_to_lab(img_rgb)
+                display_name = "LAB"
+            
+            elif "XYZ" in model_name:
+                model_data = ColorModels.rgb_to_xyz(img_rgb)
+                display_name = "XYZ"
+            
+            if model_data:
+                # Crear y mostrar ventana del modelo
+                self.model_window = ColorModelWindow(model_data, display_name, img_rgb)
+                self.model_window.show()
+                self.view.show_status(f"Modelo {display_name} aplicado correctamente")
+            else:
+                QMessageBox.warning(self.view, "Error", f"No se pudo aplicar el modelo {model_name}")
+        
+        except Exception as e:
+            QMessageBox.critical(self.view, "Error", f"Error al aplicar modelo: {str(e)}")

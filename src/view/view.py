@@ -98,9 +98,31 @@ class MainWindow(QMainWindow):
         rgb_layout.addWidget(self.btn_rgb)
         rgb_group.setLayout(rgb_layout)
         left_layout.addWidget(rgb_group)
+
+        models_group = QGroupBox("3. Modelos de Color")
+        models_layout = QVBoxLayout()
+
+        self.models_combo = QComboBox()
+        self.models_combo.addItems([
+            "RGB (Original)",
+            "CMYK (Cian, Magenta, Amarillo, Negro)",
+            "HSV (Matiz, Saturación, Valor)",
+            "HSI (Matiz, Saturación, Intensidad)",
+            "YUV (Luminancia, Crominancia)",
+            "LAB (CIE L*a*b*)",
+            "XYZ (CIE 1931)"
+        ])
+        models_layout.addWidget(QLabel("Selecciona modelo:"))
+        models_layout.addWidget(self.models_combo)
+
+        self.btn_apply_model = QPushButton("Aplicar modelo de color")
+        models_layout.addWidget(self.btn_apply_model)
+
+        models_group.setLayout(models_layout)
+        left_layout.addWidget(models_group)
         
-        # ===== 3. Escala de grises =====
-        gray_group = QGroupBox("3. Escala de grises")
+        # ===== 4. Escala de grises =====
+        gray_group = QGroupBox("4. Escala de grises")
         gray_layout = QVBoxLayout()
         self.btn_gray = QPushButton("Convertir a grises")
         gray_layout.addWidget(self.btn_gray)
@@ -108,7 +130,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(gray_group)
         
         # ===== 4. Mapas de color =====
-        maps_group = QGroupBox("4. Mapas de Color")
+        maps_group = QGroupBox("5. Mapas de Color")
         maps_layout = QVBoxLayout()
         
         self.map_combo = QComboBox()
@@ -127,7 +149,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(maps_group)
         
         # ===== 5. Binarización =====
-        binary_group = QGroupBox("5. Binarización")
+        binary_group = QGroupBox("6. Binarización")
         binary_layout = QVBoxLayout()
         
         # Slider para umbral
@@ -155,15 +177,16 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(binary_group)
         
         # ===== 6. Histograma =====
-        hist_group = QGroupBox("6. Histograma")
+        hist_group = QGroupBox("7. Histograma")
         hist_layout = QVBoxLayout()
         self.btn_hist = QPushButton("Mostrar histograma")
         hist_layout.addWidget(self.btn_hist)
         hist_group.setLayout(hist_layout)
         left_layout.addWidget(hist_group)
+
         
-        # ===== 7. Guardar =====
-        save_group = QGroupBox("7. Guardar")
+        # ===== 8. Guardar =====
+        save_group = QGroupBox("8. Guardar")
         save_layout = QVBoxLayout()
         self.btn_save = QPushButton("Guardar resultado")
         save_layout.addWidget(self.btn_save)
@@ -206,6 +229,7 @@ class MainWindow(QMainWindow):
         # Enlaza botones y sliders con acciones del controlador
         self.btn_load.clicked.connect(self.controller.load_image)
         self.btn_rgb.clicked.connect(self.controller.show_rgb_components)
+        self.btn_apply_model.clicked.connect(self.controller.apply_color_model)  # NUEVO
         self.btn_gray.clicked.connect(self.controller.convert_to_gray)
         self.btn_apply_map.clicked.connect(self.controller.apply_map)
         self.btn_binary_fixed.clicked.connect(lambda: self.controller.apply_binary('fixed'))
@@ -213,7 +237,7 @@ class MainWindow(QMainWindow):
         self.btn_binary_adaptive.clicked.connect(lambda: self.controller.apply_binary('adaptive'))
         self.btn_hist.clicked.connect(self.controller.show_histogram)
         self.btn_save.clicked.connect(self.controller.save_result)
-    
+
     def show_original(self, img):
         # Muestra la imagen original cargada en su pestaña
         self.original_view.set_image(img)
