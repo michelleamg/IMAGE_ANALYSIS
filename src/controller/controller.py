@@ -14,13 +14,13 @@
 """
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 import os
-import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 
 from view.rgb_window import RGBComponentsWindow
 from model.color_models import ColorModels
 from view.color_models_window import ColorModelWindow
+from view.histogram_window import HistogramWindow
 
 
 class ImageController:
@@ -34,6 +34,7 @@ class ImageController:
         # destruidas por el garbage collector de Python.
         self.rgb_window = None
         self.model_window = None
+        self.histogram_window = None
 
     # ------------------------------------------------------------------
     # Acciones de carga
@@ -257,177 +258,74 @@ class ImageController:
     # ------------------------------------------------------------------
 
     def _show_histogram_original(self):
-        """Muestra histograma RGB de la imagen original con estadísticas."""
+        """Histograma RGB de la imagen original."""
         hists = self.model.get_histogram_rgb(self.current_image)
         if hists is None:
             return
         img = self.model.get_image(self.current_image)
-
-        stats_r = self.calculate_histogram_stats(hists["r"])
-        stats_g = self.calculate_histogram_stats(hists["g"])
-        stats_b = self.calculate_histogram_stats(hists["b"])
-
-        fig = plt.figure(figsize=(14, 10))
-        fig.suptitle(
-            f"Análisis de Histograma — {self.current_image}",
-            fontsize=14, fontweight="bold",
+        stats_data = {
+            ch: self.calculate_histogram_stats(hists[ch])
+            for ch in ("r", "g", "b")
+        }
+        self.histogram_window = HistogramWindow(
+            mode="original",
+            image_name=self.current_image,
+            img=img,
+            hists=hists,
+            stats_data=stats_data,
         )
-        gs = fig.add_gridspec(2, 3, height_ratios=[1, 1.2], hspace=0.3, wspace=0.3)
-
-        ax_img = fig.add_subplot(gs[0, :2])
-        ax_img.imshow(img)
-        ax_img.set_title("Imagen original a color")
-        ax_img.axis("off")
-
-        ax_hist = fig.add_subplot(gs[0, 2])
-        ax_hist.plot(hists["r"], color="red",   alpha=0.7, label="Rojo",  linewidth=1.5)
-        ax_hist.plot(hists["g"], color="green", alpha=0.7, label="Verde", linewidth=1.5)
-        ax_hist.plot(hists["b"], color="blue",  alpha=0.7, label="Azul",  linewidth=1.5)
-        ax_hist.set_title("Histograma RGB")
-        ax_hist.set_xlabel("Nivel de intensidad")
-        ax_hist.set_ylabel("Frecuencia")
-        ax_hist.legend(fontsize=8)
-        ax_hist.grid(True, alpha=0.3)
-
-        for ax, stats, label, color in [
-            (fig.add_subplot(gs[1, 0]), stats_r, "Canal Rojo",  "#ffeeee"),
-            (fig.add_subplot(gs[1, 1]), stats_g, "Canal Verde", "#eeffee"),
-            (fig.add_subplot(gs[1, 2]), stats_b, "Canal Azul",  "#eeeeff"),
-        ]:
-            ax.axis("off")
-            ax.text(
-                0.1, 0.95, self.format_stats_text(stats, label),
-                transform=ax.transAxes, fontsize=9, fontfamily="monospace",
-                verticalalignment="top",
-                bbox=dict(boxstyle="round", facecolor=color, alpha=0.8),
-            )
+        self.histogram_window.show()
 
     def _show_histogram_gray(self):
-        """Muestra histograma de intensidades en escala de grises."""
+        """Histograma de escala de grises."""
         hist = self.model.get_histogram_gray(self.current_image)
         img_gray = self.model.get_gray_image(self.current_image)
         if hist is None or img_gray is None:
             QMessageBox.warning(self.view, "Aviso", "No hay imagen en grises")
             return
-
         stats = self.calculate_histogram_stats(hist)
-        fig = plt.figure(figsize=(14, 8))
-        fig.suptitle("Análisis de Histograma — Escala de Grises",
-                     fontsize=14, fontweight="bold")
-        gs = fig.add_gridspec(2, 2, height_ratios=[1, 1], hspace=0.3, wspace=0.3)
-
-        ax_img = fig.add_subplot(gs[0, 0])
-        ax_img.imshow(img_gray, cmap="gray")
-        ax_img.set_title("Imagen en escala de grises")
-        ax_img.axis("off")
-
-        ax_hist = fig.add_subplot(gs[0, 1])
-        ax_hist.plot(hist, color="black", linewidth=1.5)
-        ax_hist.fill_between(range(256), hist, alpha=0.3, color="gray")
-        ax_hist.set_title("Histograma de intensidades")
-        ax_hist.set_xlabel("Nivel de gris")
-        ax_hist.set_ylabel("Frecuencia")
-        ax_hist.grid(True, alpha=0.3)
-
-        if stats:
-            ax_hist.axvline(x=stats["media"],   color="red",   linestyle="--",
-                            linewidth=2, label=f"Media: {stats['media']:.1f}")
-            ax_hist.axvline(x=stats["mediana"], color="green", linestyle=":",
-                            linewidth=2, label=f"Mediana: {stats['mediana']}")
-            ax_hist.axvline(x=stats["moda"],    color="blue",  linestyle="-.",
-                            linewidth=2, label=f"Moda: {stats['moda']}")
-            ax_hist.legend(fontsize=8)
-
-        ax_stats = fig.add_subplot(gs[1, :])
-        ax_stats.axis("off")
-        ax_stats.text(
-            0.5, 0.5, self.format_stats_text(stats, "Intensidad"),
-            transform=ax_stats.transAxes, fontsize=10, fontfamily="monospace",
-            horizontalalignment="center", verticalalignment="center",
-            bbox=dict(boxstyle="round", facecolor="#f0f0f0", alpha=0.9),
+        self.histogram_window = HistogramWindow(
+            mode="gray",
+            image_name=self.current_image,
+            img=img_gray,
+            hists=hist,
+            stats_data=stats,
         )
+        self.histogram_window.show()
 
     def _show_histogram_binary(self, img_result, hist):
-        """Muestra histograma simplificado para imágenes binarizadas."""
+        """Histograma para imagen binarizada."""
         stats = self.calculate_histogram_stats(hist)
-        fig = plt.figure(figsize=(14, 8))
-        fig.suptitle(
-            f"Análisis de Histograma — {self.current_map}",
-            fontsize=14, fontweight="bold",
+        self.histogram_window = HistogramWindow(
+            mode="binary",
+            image_name=f"{self.current_image} — {self.current_map}",
+            img=img_result,
+            hists=hist,
+            stats_data=stats,
         )
-        gs = fig.add_gridspec(2, 2, height_ratios=[1, 1], hspace=0.3, wspace=0.3)
-
-        ax_img = fig.add_subplot(gs[0, 0])
-        ax_img.imshow(img_result)
-        ax_img.set_title(f"Imagen binarizada ({self.current_map.split('_')[1]})")
-        ax_img.axis("off")
-
-        ax_hist = fig.add_subplot(gs[0, 1])
-        ax_hist.bar(
-            [0, 255], [hist[0], hist[255]],
-            color=["black", "white"], edgecolor="black", alpha=0.7, width=50,
-        )
-        ax_hist.set_title("Histograma (0 = Negro, 255 = Blanco)")
-        ax_hist.set_xlabel("Valor de píxel")
-        ax_hist.set_ylabel("Frecuencia")
-        ax_hist.grid(True, alpha=0.3)
-
-        ax_stats = fig.add_subplot(gs[1, :])
-        ax_stats.axis("off")
-        ax_stats.text(
-            0.5, 0.5, self.format_stats_text(stats, ""),
-            transform=ax_stats.transAxes, fontsize=10, fontfamily="monospace",
-            horizontalalignment="center", verticalalignment="center",
-            bbox=dict(boxstyle="round", facecolor="#f0f0f0", alpha=0.9),
-        )
+        self.histogram_window.show()
 
     def _show_histogram_colormap(self, img_result, hists):
-        """Muestra histograma RGB para resultados con mapa de color."""
-        stats_r = self.calculate_histogram_stats(hists["r"])
-        stats_g = self.calculate_histogram_stats(hists["g"])
-        stats_b = self.calculate_histogram_stats(hists["b"])
-
-        fig = plt.figure(figsize=(14, 8))
-        fig.suptitle(
-            f"Análisis de Histograma RGB — {self.current_map}",
-            fontsize=14, fontweight="bold",
+        """Histograma RGB para resultado con mapa de color."""
+        stats_data = {
+            ch: self.calculate_histogram_stats(hists[ch])
+            for ch in ("r", "g", "b")
+        }
+        self.histogram_window = HistogramWindow(
+            mode="colormap",
+            image_name=f"{self.current_image} — {self.current_map}",
+            img=img_result,
+            hists=hists,
+            stats_data=stats_data,
         )
-        gs = fig.add_gridspec(2, 3, height_ratios=[1, 1.2], hspace=0.3, wspace=0.3)
-
-        ax_img = fig.add_subplot(gs[0, :2])
-        ax_img.imshow(img_result)
-        ax_img.set_title(f"Imagen con mapa {self.current_map}")
-        ax_img.axis("off")
-
-        ax_hist = fig.add_subplot(gs[0, 2])
-        ax_hist.plot(hists["r"], color="red",   alpha=0.7, label="Rojo",  linewidth=1.5)
-        ax_hist.plot(hists["g"], color="green", alpha=0.7, label="Verde", linewidth=1.5)
-        ax_hist.plot(hists["b"], color="blue",  alpha=0.7, label="Azul",  linewidth=1.5)
-        ax_hist.set_title("Histograma RGB")
-        ax_hist.set_xlabel("Nivel de intensidad")
-        ax_hist.set_ylabel("Frecuencia")
-        ax_hist.legend(fontsize=8)
-        ax_hist.grid(True, alpha=0.3)
-
-        for ax, stats, label, color in [
-            (fig.add_subplot(gs[1, 0]), stats_r, "Canal Rojo",  "#ffeeee"),
-            (fig.add_subplot(gs[1, 1]), stats_g, "Canal Verde", "#eeffee"),
-            (fig.add_subplot(gs[1, 2]), stats_b, "Canal Azul",  "#eeeeff"),
-        ]:
-            ax.axis("off")
-            ax.text(
-                0.1, 0.95, self.format_stats_text(stats, label),
-                transform=ax.transAxes, fontsize=9, fontfamily="monospace",
-                verticalalignment="top",
-                bbox=dict(boxstyle="round", facecolor=color, alpha=0.8),
-            )
+        self.histogram_window.show()
 
     # ------------------------------------------------------------------
     # Histograma — punto de entrada público
     # ------------------------------------------------------------------
 
     def show_histogram(self):
-        """Muestra el histograma según el tipo de imagen activa."""
+        """Abre la ventana de histograma detallado según el contexto activo."""
         if not self.current_image:
             QMessageBox.warning(self.view, "Aviso", "Primero carga una imagen")
             return
@@ -436,17 +334,13 @@ class ImageController:
 
         if current_tab == 0:
             self._show_histogram_original()
-
-        else:  # Pestaña Resultado
+        else:
             if self.current_map:
-                # BUG FIX: pasar image_name a get_histogram_result y get_result
                 hists = self.model.get_histogram_result(self.current_image, self.current_map)
                 img_result = self.model.get_result(self.current_image, self.current_map)
-
                 if hists is None or img_result is None:
                     QMessageBox.warning(self.view, "Aviso", "No hay resultado para mostrar")
                     return
-
                 if "BINARIA" in self.current_map:
                     self._show_histogram_binary(img_result, hists["r"])
                 else:
@@ -454,9 +348,7 @@ class ImageController:
             else:
                 self._show_histogram_gray()
 
-        plt.tight_layout()
-        plt.show()
-        self.view.show_status("Histograma mostrado")
+        self.view.show_status("Histograma detallado abierto")
 
     # ------------------------------------------------------------------
     # Modelos de color

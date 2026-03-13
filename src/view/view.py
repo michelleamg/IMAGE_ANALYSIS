@@ -93,7 +93,7 @@ class LiveHistogramCanvas(FigureCanvas):
         self.fig = Figure(figsize=(3, 1.6), dpi=90, facecolor=SIDEBAR_BG)
         super().__init__(self.fig)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.setFixedHeight(150)
+        self.setFixedHeight(180)
         self.ax = self.fig.add_axes([0.08, 0.12, 0.88, 0.78])
         self._style_axes()
 
@@ -306,7 +306,7 @@ class MainWindow(QMainWindow):
 
     def _build_sidebar(self) -> QWidget:
         sidebar = QWidget()
-        sidebar.setFixedWidth(230)
+        sidebar.setFixedWidth(320)
         sidebar.setStyleSheet(f"background: {SIDEBAR_BG};")
         layout = QVBoxLayout(sidebar)
         layout.setContentsMargins(0, 0, 0, 0)
