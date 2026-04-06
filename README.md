@@ -1,55 +1,29 @@
 # Análisis de Imagen Digital — ESCOM IPN
 
-> **Práctica 1 · Práctica 3-a · Práctica 3-b · Práctica 3-c**  
+> **Práctica 1 · Práctica 3-a · Práctica 3-b · Práctica 3-c · Práctica 4**  
 > Materia: Análisis de Imágenes · Academia de Inteligencia Artificial  
 > Autoras: Alejandra Michelle Mateo Garcia · Leyva Triana Isis Valeria  
-> Marzo 2026
+> Mayo 2026
 
-Aplicación de escritorio en Python + PyQt5 para exploración interactiva de imágenes digitales. Incluye pseudocolor, binarización, modelos de color, ruido, operaciones lógico-aritméticas y conteo de objetos por etiquetado de componentes conexas.
+Aplicación de escritorio en Python + PyQt5 para exploración interactiva de imágenes digitales. Incluye pseudocolor, binarización, modelos de color, ruido, operaciones lógico-aritméticas, conteo de objetos por etiquetado de componentes conexas y morfología matemática binaria y en grises (Latticce).
 
 ---
 
 ## Índice
 
-1. [Captura de pantalla](#captura-de-pantalla)
-2. [Requisitos](#requisitos)
-3. [Instalación](#instalación)
-4. [Ejecución](#ejecución)
-5. [Estructura del proyecto](#estructura-del-proyecto)
-6. [Funcionalidades](#funcionalidades)
+1. [Requisitos](#requisitos)
+2. [Instalación](#instalación)
+3. [Ejecución](#ejecución)
+4. [Estructura del proyecto](#estructura-del-proyecto)
+5. [Funcionalidades](#funcionalidades)
    - [Práctica 1 — Análisis de imagen](#práctica-1--análisis-de-imagen)
    - [Práctica 3-a — Ruido](#práctica-3-a--ruido)
    - [Práctica 3-b — Operaciones](#práctica-3-b--operaciones-lógicas-aritméticas-y-relacionales)
    - [Práctica 3-c — Conteo de objetos](#práctica-3-c--conteo-de-objetos)
-7. [Exportar resultados](#exportar-resultados)
-8. [Arquitectura MVC](#arquitectura-mvc)
-9. [Correcciones de bugs](#correcciones-de-bugs)
-
----
-
-## Captura de pantalla
-
-```
-┌─────────────────────────────┬──────────────────────────────────────────────┐
-│  Sidebar azul oscuro         │  Original | Resultado | Comparar             │
-│                             │                                              │
-│  📁 Archivo                 │                                              │
-│  ┄ Cargar imagen            │         [imagen activa]                      │
-│  ┄ Guardar resultado        │                                              │
-│                             │                                              │
-│  🎨 Mapa de color           │                                              │
-│  ┄ [combo] TURBO ▾          │                                              │
-│  ┄ [Aplicar mapa]           ├──────────────────────────────────────────────┤
-│                             │  Histograma en vivo (matplotlib embebido)    │
-│  ⚡ 3-b Operaciones         │                                              │
-│  ┄ [+ Suma] [− Resta] [×]   └──────────────────────────────────────────────┘
-│  ┄ [AND] [OR] [XOR] [NOT]
-│  ┄ [> Mayor] [< Menor] [≈]
-│
-│  🔬 3-c Conteo de objetos
-│  ┄ [Vecindad 4] [Vecindad 8] [Comparar]
-└─────────────────────────────
-```
+   - [Práctica 4 — Morfología Matemática](#práctica-4--morfología-matemática)
+6. [Exportar resultados](#exportar-resultados)
+7. [Arquitectura MVC](#arquitectura-mvc)
+8. [Correcciones de bugs](#correcciones-de-bugs)
 
 ---
 
@@ -59,7 +33,7 @@ Aplicación de escritorio en Python + PyQt5 para exploración interactiva de im�
 |-------------|---------------|-----|
 | Python | 3.9+ | Lenguaje base |
 | PyQt5 | 5.15+ | Interfaz gráfica |
-| opencv-python | 4.5+ | Procesamiento de imagen |
+| opencv-python | 4.5+ | Procesamiento de imagen y morfología |
 | numpy | 1.22+ | Operaciones matriciales |
 | matplotlib | 3.5+ | Histogramas embebidos |
 | scipy | 1.8+ | (Opcional) etiquetado alternativo |
@@ -69,16 +43,13 @@ Aplicación de escritorio en Python + PyQt5 para exploración interactiva de im�
 ## Instalación
 
 ```bash
-# Clonar el repositorio
 git clone https://github.com/tu-usuario/analisis-imagenes-escom.git
 cd analisis-imagenes-escom
 
-# Crear entorno virtual (recomendado)
 python -m venv venv
 source venv/bin/activate        # Linux / macOS
 venv\Scripts\activate           # Windows
 
-# Instalar dependencias
 pip install PyQt5 opencv-python numpy matplotlib scipy
 ```
 
@@ -87,11 +58,10 @@ pip install PyQt5 opencv-python numpy matplotlib scipy
 ## Ejecución
 
 ```bash
-# Desde la raíz del proyecto
 python main.py
 ```
 
-> ⚠️ Ejecutar siempre desde la raíz para que las importaciones relativas funcionen correctamente.
+> ⚠️ Ejecutar siempre desde la raíz del proyecto para que las importaciones relativas funcionen correctamente.
 
 ---
 
@@ -105,7 +75,8 @@ analisis-imagenes-escom/
 ├── model/
 │   ├── colormap.py                  # ImageModel — carga, histogramas, mapas, binarización
 │   ├── color_models.py              # ColorModels — HSV, CMYK, YCbCr, LAB, XYZ…
-│   └── practica3.py                 # Módulo 3-a/b/c — ruido, operaciones, etiquetado
+│   ├── practica3.py                 # Módulo 3-a/b/c — ruido, operaciones, etiquetado
+│   └── practica4.py                 # Módulo 4 — morfología matemática binaria y en grises
 │
 ├── controller/
 │   └── controller.py                # ImageController — lógica y coordinación MVC
@@ -152,142 +123,159 @@ analisis-imagenes-escom/
 | Adaptativo | Umbralización local 11×11 px (iluminación desigual) |
 
 #### Modelos de color
-Ventana dedicada con tarjetas por canal, estadísticas min/max/media y guardado en PNG:
-`RGB · HSV · CMYK · HSI · YUV · LAB · XYZ`
+`RGB · HSV · CMYK · HSI · YUV · LAB · XYZ` — ventana dedicada con tarjetas por canal, estadísticas y guardado en PNG.
 
 #### Histograma detallado
-Ventana Qt dedicada con 4 modos:
-
-| Modo | Contenido |
-|------|-----------|
-| `original` | Pestaña RGB superpuesto + pestaña individual por canal |
-| `gray` | Curva gris con líneas media/mediana/moda e IQR sombreado |
-| `colormap` | Igual que original sobre resultado pseudocoloreado |
-| `binary` | Barras con conteo de píxeles negros y blancos |
-
-12 métricas estadísticas por canal: media, mediana, moda, varianza, desv. estándar, asimetría, curtosis, entropía, energía, rango dinámico, P25, P75.
+Ventana Qt con 4 modos (original, gray, colormap, binary) y 12 métricas estadísticas por canal.
 
 ---
 
 ### Práctica 3-a — Ruido
 
-Módulo: `model/practica3.py`
+Todas las operaciones trabajan sobre **imagen binaria**. Si no hay binarización activa, se aplica Otsu automáticamente antes de operar.
 
 #### Tipos de ruido
 
-| Tipo | Función | Parámetro |
-|------|---------|-----------|
-| Sal y pimienta | `add_salt_pepper(img, amount)` | `amount` = fracción de píxeles afectados (0–1) |
-| Gaussiano | `add_gaussian_noise(img, sigma)` | `sigma` = desviación estándar (0.5–50) |
+| Tipo | Parámetro controlado |
+|------|---------------------|
+| Sal y pimienta | fracción de píxeles afectados (slider 1–100 %) |
+| Gaussiano | σ proporcional al slider (0.5–50) |
 
 #### Filtros suavizadores
 
-| Filtro | Función | Uso recomendado |
-|--------|---------|-----------------|
-| Mediana | `apply_median_filter(img, ksize=3)` | Eliminar ruido sal y pimienta |
-| Gaussiano | `apply_gaussian_filter(img, ksize=5, sigma=1)` | Suavizar ruido gaussiano |
+| Filtro | Uso |
+|--------|-----|
+| Mediana (3×3) | Eliminar ruido sal y pimienta |
+| Gaussiano (5×5, σ=1) | Suavizar ruido gaussiano |
 
-**Flujo recomendado según las prácticas:**
-```
-imagen original → agregar ruido → etiquetado (antes) → filtro → etiquetado (después)
-```
+Después del filtro, la imagen se re-binariza automáticamente (umbral 127) para mantener la naturaleza binaria.
 
-La ventana de resultados muestra la imagen antes y después con tarjeta exportable en PNG.
+**Flujo completo documentado en la ventana de resultados:**
+```
+Original color  →  Binaria (Otsu)  →  Binaria + ruido
+Binaria + ruido →  filtrado        →  re-binarizada (limpia)
+```
 
 ---
 
 ### Práctica 3-b — Operaciones lógicas, aritméticas y relacionales
 
-Módulo: `model/practica3.py`
+Todas las operaciones trabajan sobre **imagen binaria** (auto-binarización Otsu si no hay activa).
 
 #### Operaciones aritméticas (escalar)
 
-```python
-arith_add_scalar(img, valor)        # img + valor  (saturación en 255)
-arith_subtract_scalar(img, valor)   # img − valor  (saturación en 0)
-arith_multiply_scalar(img, factor)  # img × factor (saturación en 255)
-```
-
-También disponibles entre dos imágenes:
-```python
-arith_add_images(img1, img2)
-arith_subtract_images(img1, img2)
-arith_multiply_images(img1, img2)
-```
+| Operación | Función |
+|-----------|---------|
+| Suma | `img_bin + escalar` (saturación en 255) |
+| Resta | `img_bin − escalar` (saturación en 0) |
+| Multiplicación | `img_bin × factor` |
 
 #### Operaciones lógicas
 
-| Operación | Función | Descripción |
-|-----------|---------|-------------|
-| AND | `logic_and(img1, img2)` | Solo píxeles activos en **ambas** imágenes |
-| OR | `logic_or(img1, img2)` | Píxeles activos en **al menos una** imagen |
-| XOR | `logic_xor(img1, img2)` | Píxeles que **difieren** entre las imágenes |
-| NOT | `logic_not(img)` | **Inversión** bit a bit (unaria) |
+| Operación | Resultado |
+|-----------|-----------|
+| AND | Solo píxeles activos en **ambas** imágenes binarias |
+| OR | Píxeles activos en **al menos una** imagen |
+| XOR | Píxeles que **difieren** entre las dos imágenes |
+| NOT | **Inversión** bit a bit (unaria, una sola imagen) |
 
-> AND, OR y XOR solicitan una segunda imagen mediante diálogo de archivo al ejecutarse.  
-> Se recomienda aplicar umbralizado simple antes de estas operaciones.
+> AND, OR y XOR solicitan una segunda imagen mediante diálogo de archivo. Esa imagen también se binariza con Otsu automáticamente.
 
 #### Operaciones relacionales
 
-| Operación | Función | Resultado |
-|-----------|---------|-----------|
-| `> umbral` | `relational_greater(img, threshold)` | Máscara: píxeles más claros que el umbral |
-| `< umbral` | `relational_less(img, threshold)` | Máscara: píxeles más oscuros que el umbral |
-| `≈ umbral` | `relational_equal(img, threshold, tol=10)` | Máscara: píxeles ≈ umbral ±10 |
-
-El umbral se toma del slider de binarización del sidebar.
+| Operación | Resultado sobre imagen binaria |
+|-----------|-------------------------------|
+| `> umbral` | Máscara: píxeles con valor > umbral |
+| `< umbral` | Máscara: píxeles con valor < umbral |
+| `≈ umbral` | Máscara: píxeles con valor ≈ umbral ±10 |
 
 ---
 
 ### Práctica 3-c — Conteo de objetos
 
-Módulo: `model/practica3.py`
+Trabaja siempre sobre **imagen binaria**.
 
-#### Etiquetado de componentes conexas
+| Modo | Conectividad | Efecto |
+|------|-------------|--------|
+| Vecindad-4 | Solo ortogonal (↑↓←→) | Estricta; diagonales no conectan |
+| Vecindad-8 | Ortogonal + diagonal | Inclusiva; formas curvas completas |
+| Comparar | Ambas | Grid 2×2 con las diferencias numéricas |
 
-```python
-result = connected_components(binary_img, connectivity=8)
-# result["num_objects"]  → número de objetos detectados
-# result["labels_img"]   → imagen RGB coloreada por etiqueta
-# result["contours_img"] → imagen con contornos verdes numerados
-# result["stats"]        → lista de {"id", "area", "cx", "cy", "x","y","w","h"}
+La ventana de resultados muestra: Original color · Binaria · Etiquetado coloreado · Contornos numerados, con estadísticas por objeto (área, centroide, bounding box).
+
+---
+
+### Práctica 4 — Morfología Matemática
+
+Módulo: `model/practica4.py`  
+Referencia teórica: [HIPR2 Morphology](https://homepages.inf.ed.ac.uk/rbf/HIPR2/morops.htm)
+
+#### Elemento estructurante (EE)
+
+Configurable desde el sidebar antes de cualquier operación:
+
+| Forma | Función | Notas |
+|-------|---------|-------|
+| Rect | `kernel_rect(N)` | Cuadrado N×N |
+| Cruz | `kernel_cross(N)` | Solo filas/columnas centrales |
+| Elipse | `kernel_ellipse(N)` | Forma oval inscrita |
+
+Tamaño disponible: 3, 5, 7, 9, 11 px.
+
+#### Operaciones básicas (binaria y grises)
+
+| Operación | Función | Efecto binario | Efecto grises |
+|-----------|---------|----------------|---------------|
+| Erosión | `erosion(img, k)` | Reduce regiones blancas | Oscurece (mínimo local) |
+| Dilatación | `dilation(img, k)` | Expande regiones blancas | Aclara (máximo local) |
+| Apertura | `opening(img, k)` | Erosión → Dilatación; elimina ruido pequeño | Suaviza picos brillantes |
+| Cierre | `closing(img, k)` | Dilatación → Erosión; rellena agujeros | Rellena valles oscuros |
+
+> Apertura y Cierre se implementan en modo **tradicional** (composición explícita de erosión y dilatación) para cumplir con el requisito de la práctica.
+
+#### Morfología Binaria avanzada
+
+| Operación | Función | Descripción |
+|-----------|---------|-------------|
+| Frontera | `boundary(img, k)` | `img − erosión(img)` — extrae contorno interior |
+| Hit-or-Miss | `hit_or_miss(img, se_fg, se_bg)` | Detecta patrones específicos de forma |
+| Adelgazamiento | `thinning(img, iters)` | Reduce objetos a 1 px de grosor (Zhang-Suen) |
+| Esqueleto | `skeleton(img)` | `∪ [Eᵏ(img) − open(Eᵏ(img))]` — Medial Axis Transform |
+
+#### Morfología en Grises — Latticce
+
+| Operación | Función | Descripción |
+|-----------|---------|-------------|
+| Gradiente simétrico | `gradient_morph(img, k, "symmetric")` | `dilatación − erosión` — todos los bordes |
+| Gradiente por erosión | `gradient_morph(img, k, "erosion")` | `img − erosión` — bordes internos |
+| Gradiente por dilatación | `gradient_morph(img, k, "dilation")` | `dilatación − img` — bordes externos |
+| Top Hat | `top_hat(img, k)` | `img − apertura(img)` — detecta picos brillantes |
+| Bot Hat | `bot_hat(img, k)` | `cierre(img) − img` — detecta valles oscuros |
+| Suavizado | `morph_smooth(img, k)` | `cierre(apertura(img))` — elimina ruido claro y oscuro |
+
+#### Botones "Todo bin." y "Todo gris"
+
+Ejecutan **todas** las operaciones del modo de un jalón y abren un `ResultsWindow` con el grid completo (2 + N tarjetas), donde cada una tiene su botón individual de guardado PNG.
+
 ```
+[Todo bin.]  →  Erosión · Dilatación · Apertura · Cierre ·
+               Frontera · Hit-or-Miss · Adelgazamiento · Esqueleto
 
-| Vecindad | Conectividad | Efecto |
-|----------|-------------|--------|
-| Vecindad-4 | Solo ortogonal (↑↓←→) | Más estricta; objetos con conexión diagonal se separan |
-| Vecindad-8 | Ortogonal + diagonal | Más inclusiva; detecta formas curvas completas |
-
-#### Comparación V4 vs V8
-
-```python
-r4, r8 = compare_connectivity(binary_img)
-```
-
-La ventana **Comparar** muestra los 4 resultados (etiquetado y contornos de cada vecindad) en un grid 2×2 con las diferencias numéricas en el panel izquierdo.
-
-**Flujo completo de la práctica:**
-```
-imagen → binarizar (Otsu/Adaptativo) → etiquetar V4 → etiquetar V8
-       → agregar ruido sal & pimienta → etiquetar V4/V8 → filtro mediana
-       → etiquetar V4/V8 (comparar antes/después del filtro)
+[Todo gris]  →  Erosión · Dilatación · Apertura · Cierre ·
+               Grad. simétrico · Grad. erosión · Grad. dilatación ·
+               Top Hat · Bot Hat · Suavizado morfológico
 ```
 
 ---
 
 ## Exportar resultados
 
-### Desde ResultsWindow (prácticas 3-a / 3-b / 3-c)
-- **Botón "💾 Guardar PNG"** en cada tarjeta → guarda esa imagen individual
-- **Botón "📁 Exportar todo como PNG"** → elige carpeta y guarda todos los resultados visibles
+Desde cualquier `ResultsWindow` (prácticas 3-a / 3-b / 3-c / 4):
 
-Todas las exportaciones son PNG sin pérdida (`cv2.imwrite` con extensión `.png`).
+- **Botón "💾 Guardar PNG"** en cada tarjeta → guarda esa imagen individual sin pérdida.
+- **Botón "📁 Exportar todo como PNG"** → elige carpeta y guarda todas las imágenes visibles.
 
-### Desde la ventana principal
-- **Guardar resultado**: exporta el resultado activo como JPG o PNG
-
-### Desde ColorModelWindow
-- **Botón Guardar [canal] como PNG**: guarda el canal individual en escala de grises
+Desde la ventana principal → **Guardar resultado**: exporta el resultado activo como JPG o PNG.
 
 ---
 
@@ -301,12 +289,23 @@ Usuario → View (señales Qt) → Controller → Model (procesa)
 
 | Componente | Responsabilidad |
 |-----------|----------------|
-| `ImageModel` | Almacena imágenes, calcula histogramas, aplica transformaciones |
-| `practica3` | Funciones puras de ruido, operaciones y etiquetado |
-| `ImageController` | Coordina modelo ↔ vista, abre ventanas secundarias |
+| `ImageModel` (`colormap.py`) | Almacena imágenes, calcula histogramas, aplica transformaciones |
+| `practica3.py` | Funciones puras: ruido, operaciones lógicas/aritméticas/relacionales, etiquetado |
+| `practica4.py` | Funciones puras: todas las operaciones morfológicas binarias y en grises |
+| `ImageController` | Coordina modelo ↔ vista; gestiona `_get_binary_img()` para garantizar base binaria |
 | `MainWindow` | Sidebar + área principal; no conoce el modelo |
 | `ResultsWindow` | Grid genérico de resultados; recibe lista de `{"title", "img", "badge"}` |
-| `HistogramWindow` | Histograma detallado con estadísticas por canal |
+| `HistogramWindow` | Histograma detallado con 12 métricas estadísticas por canal |
+
+### Flujo de binarización automática
+
+Todas las operaciones de las prácticas 3 y 4 que requieren imagen binaria llaman internamente a `_get_binary_img()`:
+
+```python
+# Prioridad:
+# 1. Si current_map contiene "BINARIA_*" → usa esa binarización
+# 2. Si no → aplica Otsu automáticamente, muestra en Resultado y avisa en status bar
+```
 
 ---
 
@@ -315,11 +314,11 @@ Usuario → View (señales Qt) → Controller → Model (procesa)
 | # | Archivo | Descripción |
 |---|---------|-------------|
 | 1 | `model/colormap.py` | `get_histogram_result` ignoraba `image_name`; corregido con clave compuesta `(image_name, map_name)` |
-| 2 | `controller/controller.py` | `rgb_window` y `model_window` eran variables locales; destruidas por el garbage collector. Ahora son `self.*` |
-| 3 | `view/color_models_window.py` | División por cero en `cmyk_to_rgb_display` cuando `k ≈ 1`. Corregido con `np.clip` |
+| 2 | `controller/controller.py` | `rgb_window` y `model_window` eran variables locales destruidas por el GC; ahora son `self.*` |
+| 3 | `view/color_models_window.py` | División por cero en `cmyk_to_rgb_display` cuando `k ≈ 1`; corregido con `np.clip` |
 
 ---
 
 ## Licencia
 
-Proyecto académico — ESCOM · IPN · Marzo 2026.
+Proyecto académico — ESCOM · IPN · Mayo 2026.

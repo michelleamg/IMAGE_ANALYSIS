@@ -23,6 +23,7 @@ from view.color_models_window import ColorModelWindow
 from view.histogram_window import HistogramWindow
 from view.results_window import ResultsWindow
 import model.practica3 as p3
+import model.practica4 as p4
 
 
 class ImageController:
@@ -1119,3 +1120,156 @@ class ImageController:
             f"Comparación binaria: V-4={n4} obj  V-8={n8} obj  diferencia={dif}"
         )
 
+
+    # ══════════════════════════════════════════════════════════════════════
+    # PRÁCTICA 4 — MORFOLOGÍA MATEMÁTICA (binaria y en grises / latticce)
+    # ══════════════════════════════════════════════════════════════════════
+
+    _MORPH_LABELS = {
+        "erosion":        ("Erosión",                  "aritmética"),
+        "dilation":       ("Dilatación",               "aritmética"),
+        "opening":        ("Apertura",                 "aritmética"),
+        "closing":        ("Cierre",                   "aritmética"),
+        "boundary":       ("Frontera morfológica",     "lógica"),
+        "hit_or_miss":    ("Hit-or-Miss",              "lógica"),
+        "thinning":       ("Adelgazamiento",           "lógica"),
+        "skeleton":       ("Esqueleto morfológico",    "lógica"),
+        "grad_symmetric": ("Gradiente simétrico",      "relacional"),
+        "grad_erosion":   ("Gradiente por erosión",    "relacional"),
+        "grad_dilation":  ("Gradiente por dilatación", "relacional"),
+        "top_hat":        ("Top Hat",                  "etiquetado"),
+        "bot_hat":        ("Bot Hat",                  "etiquetado"),
+        "smooth":         ("Suavizado morfológico",    "etiquetado"),
+    }
+
+    def _get_morph_kernel(self) -> np.ndarray:
+        shape = self.view.morph_shape_combo.currentText().lower()
+        size  = int(self.view.morph_size_combo.currentText())
+        return p4._get_kernel(shape, size)
+
+    def _morph_info_rows(self, op: str, mode_lbl: str,
+                         shape: str, size: int) -> list:
+        label, _ = self._MORPH_LABELS.get(op, (op, "default"))
+        return [
+            ("Operación", label),
+            ("Modo",      mode_lbl),
+            ("EE forma",  shape),
+            ("EE tamaño", f"{size}×{size}"),
+        ]
+
+    def apply_morph_op(self, op: str):
+        """Aplica una sola operación morfológica y abre ResultsWindow."""
+        if not self._require_image():
+            return
+
+        original  = self.model.get_image(self.current_image)
+        shape_txt = self.view.morph_shape_combo.currentText()
+        size      = int(self.view.morph_size_combo.currentText())
+        kernel    = self._get_morph_kernel()
+        label, badge = self._MORPH_LABELS.get(op, (op, "default"))
+
+        binary_ops = {"erosion", "dilation", "opening", "closing",
+                      "boundary", "hit_or_miss", "thinning", "skeleton"}
+        if op in binary_ops:
+            base     = self._get_binary_img()
+            mode_lbl = "Binaria"
+        else:
+            base     = p4._to_rgb(p4._ensure_gray(original))
+            mode_lbl = "Grises"
+
+        dispatch = {
+            "erosion":        lambda: p4.erosion(base, kernel),
+            "dilation":       lambda: p4.dilation(base, kernel),
+            "opening":        lambda: p4.opening(base, kernel),
+            "closing":        lambda: p4.closing(base, kernel),
+            "boundary":       lambda: p4.boundary(base, kernel),
+            "hit_or_miss":    lambda: p4.hit_or_miss(base),
+            "thinning":       lambda: p4.thinning(base),
+            "skeleton":       lambda: p4.skeleton(base),
+            "grad_symmetric": lambda: p4.gradient_morph(base, kernel, "symmetric"),
+            "grad_erosion":   lambda: p4.gradient_morph(base, kernel, "erosion"),
+            "grad_dilation":  lambda: p4.gradient_morph(base, kernel, "dilation"),
+            "top_hat":        lambda: p4.top_hat(base, kernel),
+            "bot_hat":        lambda: p4.bot_hat(base, kernel),
+            "smooth":         lambda: p4.morph_smooth(base, kernel),
+        }
+        result = dispatch[op]()
+
+        self.view.show_result(result)
+        self._store_result(result, f"MORPH_{op.upper()}")
+
+        cards = [
+            {"title": "Original (color)",   "img": original, "badge": badge},
+            {"title": f"Base ({mode_lbl})", "img": base,     "badge": badge,
+             "extra_info": "imagen de entrada"},
+            {"title": label,                "img": result,   "badge": badge,
+             "extra_info": f"EE {shape_txt} {size}×{size}"},
+        ]
+        self.results_window = ResultsWindow(
+            title=f"Práctica 4 — {label}",
+            ref_img=base,
+            cards_data=cards,
+            left_title=f"Base ({mode_lbl})",
+            left_info=self._morph_info_rows(op, mode_lbl, shape_txt, size),
+            cols=3,
+        )
+        self.results_window.show()
+        self.view.show_status(f"Morfología: {label}  EE {shape_txt} {size}×{size}")
+
+    def apply_morph_single(self, mode: str):
+        """Redirige al conjunto completo para el modo dado."""
+        self.apply_morph_all(mode)
+
+    def apply_morph_all(self, mode: str):
+        """Aplica TODAS las operaciones morfológicas y muestra grid completo."""
+        if not self._require_image():
+            return
+
+        original  = self.model.get_image(self.current_image)
+        shape_txt = self.view.morph_shape_combo.currentText()
+        size      = int(self.view.morph_size_combo.currentText())
+        kernel    = self._get_morph_kernel()
+
+        if mode == "bin":
+            base     = self._get_binary_img()
+            mode_lbl = "Binaria"
+            results  = p4.run_all_binary(base, kernel)
+            badge    = "lógica"
+        else:
+            gray     = p4._ensure_gray(original)
+            base     = p4._to_rgb(gray)
+            mode_lbl = "Grises (Latticce)"
+            results  = p4.run_all_gray(gray, kernel)
+            badge    = "relacional"
+
+        last_img = list(results.values())[-1]
+        self.view.show_result(last_img)
+        self._store_result(last_img, f"MORPH_ALL_{mode.upper()}")
+
+        cards = [
+            {"title": "Original (color)",   "img": original, "badge": badge},
+            {"title": f"Base ({mode_lbl})", "img": base,     "badge": badge,
+             "extra_info": "imagen de entrada"},
+        ] + [
+            {"title": name, "img": img, "badge": badge,
+             "extra_info": f"EE {shape_txt} {size}×{size}"}
+            for name, img in results.items()
+        ]
+
+        self.results_window = ResultsWindow(
+            title=f"Práctica 4 — Todas las operaciones ({mode_lbl})",
+            ref_img=base,
+            cards_data=cards,
+            left_title=f"Base ({mode_lbl})",
+            left_info=[
+                ("Modo",       mode_lbl),
+                ("EE forma",   shape_txt),
+                ("EE tamaño",  f"{size}×{size}"),
+                ("Operaciones", str(len(results))),
+            ],
+            cols=3,
+        )
+        self.results_window.show()
+        self.view.show_status(
+            f"Morfología {mode_lbl}: {len(results)} operaciones — EE {shape_txt} {size}×{size}"
+        )

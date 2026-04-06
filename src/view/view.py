@@ -94,7 +94,8 @@ class LiveHistogramCanvas(FigureCanvas):
         super().__init__(self.fig)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setFixedHeight(180)
-        self.ax = self.fig.add_axes([0.08, 0.12, 0.88, 0.78])
+        self.ax = self.fig.add_subplot(111)
+        self.fig.subplots_adjust(left=0.06, right=0.98, top=0.95, bottom=0.10)
         self._style_axes()
 
     def _style_axes(self):
@@ -125,7 +126,6 @@ class LiveHistogramCanvas(FigureCanvas):
 
         self.ax.set_xlim(0, 255)
         self.ax.set_yticks([])
-        self.fig.tight_layout(pad=0.3)
         self.draw()
 
 
@@ -604,6 +604,116 @@ class MainWindow(QMainWindow):
         sec_cc.add_widget(cc_btn_row)
         inner_layout.addWidget(sec_cc)
 
+        # ── Sección: Práctica 4 — Morfología Matemática ──────────────
+        sec_morph = SidebarSection("4  Morfología Matemática")
+
+        # EE: forma y tamaño
+        ee_row = QWidget()
+        ee_row.setStyleSheet("background: transparent;")
+        ee_layout = QHBoxLayout(ee_row)
+        ee_layout.setContentsMargins(12, 4, 12, 2)
+        ee_layout.setSpacing(6)
+        lbl_ee = QLabel("EE")
+        lbl_ee.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 11px;")
+        self.morph_shape_combo = _sidebar_combo(["Rect", "Cruz", "Elipse"])
+        self.morph_shape_combo.setFixedWidth(80)
+        lbl_sz = QLabel("sz")
+        lbl_sz.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 11px;")
+        self.morph_size_combo = _sidebar_combo(["3", "5", "7", "9", "11"])
+        self.morph_size_combo.setFixedWidth(50)
+        ee_layout.addWidget(lbl_ee)
+        ee_layout.addWidget(self.morph_shape_combo)
+        ee_layout.addWidget(lbl_sz)
+        ee_layout.addWidget(self.morph_size_combo)
+        ee_layout.addStretch()
+        sec_morph.add_widget(ee_row)
+
+        # Modo: Binaria / Grises
+        mode_row = QWidget()
+        mode_row.setStyleSheet("background: transparent;")
+        mr_layout = QHBoxLayout(mode_row)
+        mr_layout.setContentsMargins(12, 2, 12, 2)
+        mr_layout.setSpacing(4)
+        self.btn_morph_bin  = _mini_button("Binaria")
+        self.btn_morph_gray = _mini_button("Grises")
+        self.btn_morph_all_bin  = _mini_button("Todo bin.")
+        self.btn_morph_all_gray = _mini_button("Todo gris")
+        mr_layout.addWidget(self.btn_morph_bin)
+        mr_layout.addWidget(self.btn_morph_gray)
+        mr_layout.addWidget(self.btn_morph_all_bin)
+        mr_layout.addWidget(self.btn_morph_all_gray)
+        sec_morph.add_widget(mode_row)
+
+        # Operaciones básicas
+        lbl_basic = QLabel("  Operaciones básicas")
+        lbl_basic.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 10px; padding: 4px 0 0;")
+        sec_morph.add_widget(lbl_basic)
+        basic_row = QWidget()
+        basic_row.setStyleSheet("background: transparent;")
+        br_layout = QHBoxLayout(basic_row)
+        br_layout.setContentsMargins(12, 2, 12, 2)
+        br_layout.setSpacing(4)
+        self.btn_erode   = _mini_button("Erosión")
+        self.btn_dilate  = _mini_button("Dilatación")
+        self.btn_open    = _mini_button("Apertura")
+        self.btn_close   = _mini_button("Cierre")
+        br_layout.addWidget(self.btn_erode)
+        br_layout.addWidget(self.btn_dilate)
+        br_layout.addWidget(self.btn_open)
+        br_layout.addWidget(self.btn_close)
+        sec_morph.add_widget(basic_row)
+
+        # Morfología Binaria avanzada
+        lbl_adv_bin = QLabel("  Morfología Binaria")
+        lbl_adv_bin.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 10px; padding: 4px 0 0;")
+        sec_morph.add_widget(lbl_adv_bin)
+        adv_bin_row = QWidget()
+        adv_bin_row.setStyleSheet("background: transparent;")
+        ab_layout = QHBoxLayout(adv_bin_row)
+        ab_layout.setContentsMargins(12, 2, 12, 2)
+        ab_layout.setSpacing(4)
+        self.btn_boundary   = _mini_button("Frontera")
+        self.btn_hit_miss   = _mini_button("Hit-Miss")
+        self.btn_thin       = _mini_button("Adelgaz.")
+        self.btn_skeleton   = _mini_button("Esqueleto")
+        ab_layout.addWidget(self.btn_boundary)
+        ab_layout.addWidget(self.btn_hit_miss)
+        ab_layout.addWidget(self.btn_thin)
+        ab_layout.addWidget(self.btn_skeleton)
+        sec_morph.add_widget(adv_bin_row)
+
+        # Morfología en Grises (Latticce) avanzada
+        lbl_adv_gray = QLabel("  Morfología en Grises")
+        lbl_adv_gray.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 10px; padding: 4px 0 0;")
+        sec_morph.add_widget(lbl_adv_gray)
+        adv_gray_row = QWidget()
+        adv_gray_row.setStyleSheet("background: transparent;")
+        ag_layout = QHBoxLayout(adv_gray_row)
+        ag_layout.setContentsMargins(12, 2, 12, 2)
+        ag_layout.setSpacing(4)
+        self.btn_grad_sym  = _mini_button("∇ Sim.")
+        self.btn_grad_ero  = _mini_button("∇ Ero.")
+        self.btn_grad_dil  = _mini_button("∇ Dil.")
+        ag_layout.addWidget(self.btn_grad_sym)
+        ag_layout.addWidget(self.btn_grad_ero)
+        ag_layout.addWidget(self.btn_grad_dil)
+        sec_morph.add_widget(adv_gray_row)
+
+        hat_row = QWidget()
+        hat_row.setStyleSheet("background: transparent;")
+        ht_layout = QHBoxLayout(hat_row)
+        ht_layout.setContentsMargins(12, 2, 12, 6)
+        ht_layout.setSpacing(4)
+        self.btn_top_hat  = _mini_button("Top Hat")
+        self.btn_bot_hat  = _mini_button("Bot Hat")
+        self.btn_smooth   = _mini_button("Suavizado")
+        ht_layout.addWidget(self.btn_top_hat)
+        ht_layout.addWidget(self.btn_bot_hat)
+        ht_layout.addWidget(self.btn_smooth)
+        sec_morph.add_widget(hat_row)
+
+        inner_layout.addWidget(sec_morph)
+
         # ── Sección: Análisis ─────────────────────────────────────────
         sec_analysis = SidebarSection("Análisis")
         self.btn_hist = _sidebar_button("  Histograma detallado")
@@ -901,4 +1011,60 @@ class MainWindow(QMainWindow):
         )
         self.btn_cc_cmp.clicked.connect(
             self.controller.compare_connected_components
+        )
+
+        # ── 4 Morfología Matemática ───────────────────────────────────
+        self.btn_morph_bin.clicked.connect(
+            lambda: self.controller.apply_morph_single("bin")
+        )
+        self.btn_morph_gray.clicked.connect(
+            lambda: self.controller.apply_morph_single("gray")
+        )
+        self.btn_morph_all_bin.clicked.connect(
+            lambda: self.controller.apply_morph_all("bin")
+        )
+        self.btn_morph_all_gray.clicked.connect(
+            lambda: self.controller.apply_morph_all("gray")
+        )
+        self.btn_erode.clicked.connect(
+            lambda: self.controller.apply_morph_op("erosion")
+        )
+        self.btn_dilate.clicked.connect(
+            lambda: self.controller.apply_morph_op("dilation")
+        )
+        self.btn_open.clicked.connect(
+            lambda: self.controller.apply_morph_op("opening")
+        )
+        self.btn_close.clicked.connect(
+            lambda: self.controller.apply_morph_op("closing")
+        )
+        self.btn_boundary.clicked.connect(
+            lambda: self.controller.apply_morph_op("boundary")
+        )
+        self.btn_hit_miss.clicked.connect(
+            lambda: self.controller.apply_morph_op("hit_or_miss")
+        )
+        self.btn_thin.clicked.connect(
+            lambda: self.controller.apply_morph_op("thinning")
+        )
+        self.btn_skeleton.clicked.connect(
+            lambda: self.controller.apply_morph_op("skeleton")
+        )
+        self.btn_grad_sym.clicked.connect(
+            lambda: self.controller.apply_morph_op("grad_symmetric")
+        )
+        self.btn_grad_ero.clicked.connect(
+            lambda: self.controller.apply_morph_op("grad_erosion")
+        )
+        self.btn_grad_dil.clicked.connect(
+            lambda: self.controller.apply_morph_op("grad_dilation")
+        )
+        self.btn_top_hat.clicked.connect(
+            lambda: self.controller.apply_morph_op("top_hat")
+        )
+        self.btn_bot_hat.clicked.connect(
+            lambda: self.controller.apply_morph_op("bot_hat")
+        )
+        self.btn_smooth.clicked.connect(
+            lambda: self.controller.apply_morph_op("smooth")
         )

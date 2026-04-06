@@ -279,14 +279,24 @@ def _to_binary(image: np.ndarray) -> np.ndarray:
 
 
 def _colorize_labels(labels: np.ndarray, num_labels: int) -> np.ndarray:
-    """Asigna un color HSV distintivo a cada etiqueta."""
+    """Asigna un color HSV distintivo a cada etiqueta — versión vectorizada.
+
+    En lugar de iterar objeto por objeto (O(N·píxeles)), construye una LUT
+    de colores y la aplica de una sola vez con np.take, que es O(píxeles).
+    """
     h, w = labels.shape
-    output = np.zeros((h, w, 3), dtype=np.uint8)
     if num_labels <= 1:
-        return output
+        return np.zeros((h, w, 3), dtype=np.uint8)
+
+    # LUT: índice 0 = fondo negro; índices 1..N = colores HSV distribuidos
+    lut = np.zeros((num_labels, 3), dtype=np.uint8)
     for label in range(1, num_labels):
-        hue = int((label / (num_labels - 1)) * 170)  # 0–170 en espacio HSV de OpenCV
-        color_hsv = np.uint8([[[hue, 220, 210]]])
-        color_rgb = cv2.cvtColor(color_hsv, cv2.COLOR_HSV2RGB)[0][0].tolist()
-        output[labels == label] = color_rgb
-    return output
+        hue = int((label / max(num_labels - 1, 1)) * 170)  # 0–170 HSV OpenCV
+        hsv_px = np.uint8([[[hue, 220, 210]]])
+        lut[label] = cv2.cvtColor(hsv_px, cv2.COLOR_HSV2RGB)[0][0]
+
+    # Aplicar LUT vectorizada: labels contiene índices enteros 0..N
+    flat    = labels.flatten().astype(np.int32)
+    flat    = np.clip(flat, 0, num_labels - 1)
+    colored = lut[flat].reshape(h, w, 3)
+    return colored

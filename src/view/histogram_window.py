@@ -52,7 +52,9 @@ def _np_to_pixmap(img: np.ndarray, w: int, h: int) -> QPixmap:
 # ── Canvas de matplotlib estilizado ──────────────────────────────────────────
 class _HistCanvas(FigureCanvas):
     def __init__(self, width=9, height=4.2):
-        self.fig = Figure(figsize=(width, height), facecolor=BG_DARK, tight_layout=True)
+        # tight_layout=True eliminado: es incompatible con fig.clear()+add_subplot
+        # repetido en cada redibujado y provoca el UserWarning que congela la UI.
+        self.fig = Figure(figsize=(width, height), facecolor=BG_DARK)
         super().__init__(self.fig)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setStyleSheet(f"background: {BG_DARK};")
@@ -68,6 +70,10 @@ class _HistCanvas(FigureCanvas):
             mticker.FuncFormatter(lambda x, _: f"{int(x):,}".replace(",", " "))
         )
         return ax
+
+    def _apply_margins(self):
+        """Márgenes fijos seguros, sin llamar a tight_layout."""
+        self.fig.subplots_adjust(left=0.10, right=0.97, top=0.93, bottom=0.11)
 
     def plot_rgb(self, hists: dict, title: str = ""):
         self.fig.clear()
@@ -90,7 +96,7 @@ class _HistCanvas(FigureCanvas):
                   labelcolor=TEXT, framealpha=0.9)
         if title:
             ax.set_title(title, fontsize=10, color=TEXT, pad=8)
-        self.fig.tight_layout(pad=1.4)
+        self._apply_margins()
         self.draw()
 
     def plot_single(self, hist: np.ndarray, color: str, fill_color: str,
@@ -124,7 +130,7 @@ class _HistCanvas(FigureCanvas):
         ax.legend(fontsize=8, facecolor=BG_CARD, edgecolor=BORDER,
                   labelcolor=TEXT, framealpha=0.9)
         ax.set_title(f"Canal {channel_label}", fontsize=10, color=TEXT, pad=8)
-        self.fig.tight_layout(pad=1.4)
+        self._apply_margins()
         self.draw()
 
     def plot_gray(self, hist: np.ndarray, stats: dict):
@@ -155,7 +161,7 @@ class _HistCanvas(FigureCanvas):
         ax.legend(fontsize=8, facecolor=BG_CARD, edgecolor=BORDER,
                   labelcolor=TEXT, framealpha=0.9)
         ax.set_title("Histograma de intensidades", fontsize=10, color=TEXT, pad=8)
-        self.fig.tight_layout(pad=1.4)
+        self._apply_margins()
         self.draw()
 
     def plot_binary(self, hist: np.ndarray):
@@ -180,7 +186,7 @@ class _HistCanvas(FigureCanvas):
         ax.set_ylabel("Píxeles", fontsize=9, color=LABEL)
         ax.grid(True, axis="y", alpha=0.12, color=BORDER, linewidth=0.6)
         ax.set_title("Distribución binaria", fontsize=10, color=TEXT, pad=8)
-        self.fig.tight_layout(pad=1.4)
+        self._apply_margins()
         self.draw()
 
 
