@@ -437,6 +437,173 @@ class MainWindow(QMainWindow):
         sec_models.add_widget(self.btn_apply_model)
         inner_layout.addWidget(sec_models)
 
+        # ── Sección: Práctica 3-a — Ruido ────────────────────────────
+        sec_noise = SidebarSection("3-a  Ruido")
+
+        noise_combo_row = QWidget()
+        noise_combo_row.setStyleSheet("background: transparent;")
+        nc_layout = QHBoxLayout(noise_combo_row)
+        nc_layout.setContentsMargins(12, 2, 12, 2)
+        nc_layout.setSpacing(6)
+        lbl_noise = QLabel("Tipo")
+        lbl_noise.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 11px;")
+        self.noise_combo = _sidebar_combo(["Sal y pimienta", "Gaussiano"])
+        nc_layout.addWidget(lbl_noise)
+        nc_layout.addWidget(self.noise_combo)
+        sec_noise.add_widget(noise_combo_row)
+
+        noise_slider_row = QWidget()
+        noise_slider_row.setStyleSheet("background: transparent;")
+        ns_layout = QHBoxLayout(noise_slider_row)
+        ns_layout.setContentsMargins(12, 2, 12, 2)
+        ns_layout.setSpacing(6)
+        lbl_ni = QLabel("Intensidad")
+        lbl_ni.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 11px;")
+        self.noise_slider = QSlider(Qt.Horizontal)
+        self.noise_slider.setRange(1, 100)
+        self.noise_slider.setValue(5)
+        self.noise_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                background: {SIDEBAR_BORDER}; height: 3px; border-radius: 2px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {ACCENT}; width: 12px; height: 12px;
+                margin: -5px 0; border-radius: 6px;
+            }}
+            QSlider::sub-page:horizontal {{ background: {ACCENT}; border-radius: 2px; }}
+        """)
+        self.noise_label = QLabel("5 %")
+        self.noise_label.setFixedWidth(32)
+        self.noise_label.setStyleSheet(f"color: {SIDEBAR_TEXT_HI}; font-size: 11px;")
+        self.noise_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.noise_slider.valueChanged.connect(
+            lambda v: self.noise_label.setText(f"{v} %")
+        )
+        ns_layout.addWidget(lbl_ni)
+        ns_layout.addWidget(self.noise_slider)
+        ns_layout.addWidget(self.noise_label)
+        sec_noise.add_widget(noise_slider_row)
+
+        noise_btn_row = QWidget()
+        noise_btn_row.setStyleSheet("background: transparent;")
+        nb_layout = QHBoxLayout(noise_btn_row)
+        nb_layout.setContentsMargins(12, 2, 12, 6)
+        nb_layout.setSpacing(4)
+        self.btn_apply_noise    = _mini_button("Aplicar")
+        self.btn_filter_median  = _mini_button("Mediana")
+        self.btn_filter_gauss   = _mini_button("Gaussiano")
+        nb_layout.addWidget(self.btn_apply_noise)
+        nb_layout.addWidget(self.btn_filter_median)
+        nb_layout.addWidget(self.btn_filter_gauss)
+        sec_noise.add_widget(noise_btn_row)
+        inner_layout.addWidget(sec_noise)
+
+        # ── Sección: Práctica 3-b — Operaciones ──────────────────────
+        sec_ops = SidebarSection("3-b  Operaciones")
+
+        lbl_arith = QLabel("  Aritmética (escalar)")
+        lbl_arith.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 10px; padding: 4px 0 0;")
+        sec_ops.add_widget(lbl_arith)
+
+        scalar_row = QWidget()
+        scalar_row.setStyleSheet("background: transparent;")
+        sc_layout = QHBoxLayout(scalar_row)
+        sc_layout.setContentsMargins(12, 2, 12, 2)
+        sc_layout.setSpacing(4)
+        lbl_sc = QLabel("Val")
+        lbl_sc.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 11px;")
+        self.scalar_slider = QSlider(Qt.Horizontal)
+        self.scalar_slider.setRange(1, 200)
+        self.scalar_slider.setValue(50)
+        self.scalar_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                background: {SIDEBAR_BORDER}; height: 3px; border-radius: 2px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {ACCENT}; width: 12px; height: 12px;
+                margin: -5px 0; border-radius: 6px;
+            }}
+            QSlider::sub-page:horizontal {{ background: {ACCENT}; border-radius: 2px; }}
+        """)
+        self.scalar_label = QLabel("50")
+        self.scalar_label.setFixedWidth(28)
+        self.scalar_label.setStyleSheet(f"color: {SIDEBAR_TEXT_HI}; font-size: 11px;")
+        self.scalar_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.scalar_slider.valueChanged.connect(
+            lambda v: self.scalar_label.setText(str(v))
+        )
+        sc_layout.addWidget(lbl_sc)
+        sc_layout.addWidget(self.scalar_slider)
+        sc_layout.addWidget(self.scalar_label)
+        sec_ops.add_widget(scalar_row)
+
+        arith_btn_row = QWidget()
+        arith_btn_row.setStyleSheet("background: transparent;")
+        ab_layout = QHBoxLayout(arith_btn_row)
+        ab_layout.setContentsMargins(12, 2, 12, 4)
+        ab_layout.setSpacing(4)
+        self.btn_arith_add  = _mini_button("+ Suma")
+        self.btn_arith_sub  = _mini_button("− Resta")
+        self.btn_arith_mul  = _mini_button("× Multi")
+        ab_layout.addWidget(self.btn_arith_add)
+        ab_layout.addWidget(self.btn_arith_sub)
+        ab_layout.addWidget(self.btn_arith_mul)
+        sec_ops.add_widget(arith_btn_row)
+
+        lbl_logic = QLabel("  Lógica (dos imágenes)")
+        lbl_logic.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 10px; padding: 4px 0 0;")
+        sec_ops.add_widget(lbl_logic)
+
+        logic_btn_row = QWidget()
+        logic_btn_row.setStyleSheet("background: transparent;")
+        lb_layout = QHBoxLayout(logic_btn_row)
+        lb_layout.setContentsMargins(12, 2, 12, 2)
+        lb_layout.setSpacing(4)
+        self.btn_logic_and  = _mini_button("AND")
+        self.btn_logic_or   = _mini_button("OR")
+        self.btn_logic_xor  = _mini_button("XOR")
+        self.btn_logic_not  = _mini_button("NOT")
+        lb_layout.addWidget(self.btn_logic_and)
+        lb_layout.addWidget(self.btn_logic_or)
+        lb_layout.addWidget(self.btn_logic_xor)
+        lb_layout.addWidget(self.btn_logic_not)
+        sec_ops.add_widget(logic_btn_row)
+
+        lbl_rel = QLabel("  Relacional (umbral)")
+        lbl_rel.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 10px; padding: 4px 0 0;")
+        sec_ops.add_widget(lbl_rel)
+
+        rel_btn_row = QWidget()
+        rel_btn_row.setStyleSheet("background: transparent;")
+        rb_layout = QHBoxLayout(rel_btn_row)
+        rb_layout.setContentsMargins(12, 2, 12, 6)
+        rb_layout.setSpacing(4)
+        self.btn_rel_gt  = _mini_button("> Mayor")
+        self.btn_rel_lt  = _mini_button("< Menor")
+        self.btn_rel_eq  = _mini_button("≈ Igual")
+        rb_layout.addWidget(self.btn_rel_gt)
+        rb_layout.addWidget(self.btn_rel_lt)
+        rb_layout.addWidget(self.btn_rel_eq)
+        sec_ops.add_widget(rel_btn_row)
+        inner_layout.addWidget(sec_ops)
+
+        # ── Sección: Práctica 3-c — Componentes conexas ───────────────
+        sec_cc = SidebarSection("3-c  Conteo de objetos")
+
+        cc_btn_row = QWidget()
+        cc_btn_row.setStyleSheet("background: transparent;")
+        cc_layout = QHBoxLayout(cc_btn_row)
+        cc_layout.setContentsMargins(12, 4, 12, 4)
+        cc_layout.setSpacing(4)
+        self.btn_cc_v4  = _mini_button("Vecindad 4")
+        self.btn_cc_v8  = _mini_button("Vecindad 8")
+        self.btn_cc_cmp = _mini_button("Comparar")
+        cc_layout.addWidget(self.btn_cc_v4)
+        cc_layout.addWidget(self.btn_cc_v8)
+        cc_layout.addWidget(self.btn_cc_cmp)
+        sec_cc.add_widget(cc_btn_row)
+        inner_layout.addWidget(sec_cc)
+
         # ── Sección: Análisis ─────────────────────────────────────────
         sec_analysis = SidebarSection("Análisis")
         self.btn_hist = _sidebar_button("  Histograma detallado")
@@ -682,4 +849,56 @@ class MainWindow(QMainWindow):
         self.btn_hist.clicked.connect(self.controller.show_histogram)
         self.threshold_slider.valueChanged.connect(
             lambda v: self.threshold_label.setText(str(v))
+        )
+
+        # ── 3-a Ruido ─────────────────────────────────────────────────
+        self.btn_apply_noise.clicked.connect(self.controller.apply_noise)
+        self.btn_filter_median.clicked.connect(
+            lambda: self.controller.apply_filter("median")
+        )
+        self.btn_filter_gauss.clicked.connect(
+            lambda: self.controller.apply_filter("gaussian")
+        )
+
+        # ── 3-b Operaciones ───────────────────────────────────────────
+        self.btn_arith_add.clicked.connect(
+            lambda: self.controller.apply_arithmetic("add")
+        )
+        self.btn_arith_sub.clicked.connect(
+            lambda: self.controller.apply_arithmetic("subtract")
+        )
+        self.btn_arith_mul.clicked.connect(
+            lambda: self.controller.apply_arithmetic("multiply")
+        )
+        self.btn_logic_and.clicked.connect(
+            lambda: self.controller.apply_logic("and")
+        )
+        self.btn_logic_or.clicked.connect(
+            lambda: self.controller.apply_logic("or")
+        )
+        self.btn_logic_xor.clicked.connect(
+            lambda: self.controller.apply_logic("xor")
+        )
+        self.btn_logic_not.clicked.connect(
+            lambda: self.controller.apply_logic("not")
+        )
+        self.btn_rel_gt.clicked.connect(
+            lambda: self.controller.apply_relational("gt")
+        )
+        self.btn_rel_lt.clicked.connect(
+            lambda: self.controller.apply_relational("lt")
+        )
+        self.btn_rel_eq.clicked.connect(
+            lambda: self.controller.apply_relational("eq")
+        )
+
+        # ── 3-c Componentes conexas ───────────────────────────────────
+        self.btn_cc_v4.clicked.connect(
+            lambda: self.controller.apply_connected_components(4)
+        )
+        self.btn_cc_v8.clicked.connect(
+            lambda: self.controller.apply_connected_components(8)
+        )
+        self.btn_cc_cmp.clicked.connect(
+            self.controller.compare_connected_components
         )
