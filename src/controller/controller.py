@@ -24,6 +24,10 @@ from view.histogram_window import HistogramWindow
 from view.results_window import ResultsWindow
 import model.practica3 as p3
 import model.practica4 as p4
+import model.practica5 as p5
+from view.spectrum_window import SpectrumWindow
+from view.history_window import HistoryWindow
+from model.history_manager import HistoryManager
 
 
 class ImageController:
@@ -39,7 +43,10 @@ class ImageController:
         self.model_window = None
         self.histogram_window = None
         self.results_window = None
-        self.second_image = None   # imagen secundaria para operaciones de dos imágenes
+        self.spectrum_window = None
+        self.history_window = None
+        self.second_image = None
+        self.history = HistoryManager()   # imagen secundaria para operaciones de dos imágenes
 
     # ------------------------------------------------------------------
     # Acciones de carga
@@ -720,11 +727,16 @@ class ImageController:
         return True
 
     def _store_result(self, img_rgb: np.ndarray, key: str):
-        """Guarda un resultado en el modelo con clave compuesta."""
+        """Guarda resultado en el modelo, historial y refresca histograma."""
         import cv2 as _cv2
         bgr = _cv2.cvtColor(img_rgb, _cv2.COLOR_RGB2BGR) if img_rgb.ndim == 3 else img_rgb
         self.model.results[self.model._result_key(self.current_image, key)] = bgr
         self.current_map = key
+        # ── Registrar en el historial de la sesión ──────────────────────
+        self.history.add(self.current_image, key, img_rgb)
+        # ── Actualizar badge de historial en sidebar ─────────────────────
+        count = len(self.history)
+        self.view.update_history_badge(count)
         self._refresh_live_histogram()
 
     def _get_current_display_img(self) -> np.ndarray:
@@ -1272,4 +1284,267 @@ class ImageController:
         self.results_window.show()
         self.view.show_status(
             f"Morfología {mode_lbl}: {len(results)} operaciones — EE {shape_txt} {size}×{size}"
+        )
+
+    # ══════════════════════════════════════════════════════════════════════
+    # PRÁCTICA 5 — DOMINIO DE LA FRECUENCIA (FFT + DCT)
+    # ══════════════════════════════════════════════════════════════════════
+
+    # ── Helpers para leer combos del sidebar ──────────────────────────
+
+    def _fft_params(self):
+        """Lee los parámetros de FFT del sidebar y los devuelve normalizados."""
+        filtro_map = {"Butterworth": "butterworth",
+                      "Ideal": "ideal",
+                      "Gaussiano": "gaussiano"}
+        tipo_map   = {"Pasa bajas": "lowpass", "Pasa altas": "highpass"}
+        filtro = filtro_map.get(self.view.fft_filtro_combo.currentText(), "butterworth")
+        tipo   = tipo_map.get(self.view.fft_tipo_combo.currentText(), "lowpass")
+        cutoff = self.view.fft_cutoff_slider.value() / 100.0
+        orden  = int(self.view.fft_orden_combo.currentText())
+        return filtro, tipo, cutoff, orden
+
+    def _dct_q_factor(self) -> float:
+        return self.view.dct_q_slider.value() / 100.0
+
+    # ── Parte A: FFT ─────────────────────────────────────────────────
+
+    def show_fft_spectrum(self):
+        """Muestra el espectro de magnitud y fase sin aplicar ningún filtro."""
+        if not self._require_image():
+            return
+        img = self.model.get_image(self.current_image)
+        _, _, magnitud, fase = p5.fft2_imagen(img)
+
+        # Máscara identidad (todas las frecuencias, sin filtro)
+        mask_id = np.ones(img.shape[:2], dtype=np.float32)
+        gray_rgb = p5._to_display_rgb(p5._to_gray_float(img))
+
+        self.spectrum_window = SpectrumWindow(
+            original_rgb=img,
+            magnitud_arr=magnitud,
+            fase_arr=fase,
+            mask_arr=mask_id,
+            filtrada_rgb=gray_rgb,
+            filtro="Ninguno",
+            tipo="—",
+            cutoff=0.0,
+            orden=0,
+        )
+        self.spectrum_window.show()
+        self.view.show_status("Espectro FFT mostrado")
+
+    def apply_fft_filter(self):
+        """Aplica el filtro configurado en el sidebar y abre SpectrumWindow."""
+        if not self._require_image():
+            return
+        img = self.model.get_image(self.current_image)
+        filtro, tipo, cutoff, orden = self._fft_params()
+        tipo_label = "Pasa bajas" if tipo == "lowpass" else "Pasa altas"
+
+        filtrada_rgb, mask, magnitud, fase = p5.aplicar_filtro_fft(
+            img, filtro=filtro, tipo=tipo, cutoff=cutoff, orden=orden
+        )
+
+        # Calcular PSNR respecto al original en grises
+        gray_orig = p5._to_gray_float(img)
+        gray_filt = p5._to_gray_float(filtrada_rgb)
+        psnr = p5.calcular_psnr(gray_orig, gray_filt)
+
+        self.view.show_result(filtrada_rgb)
+        self._store_result(filtrada_rgb, f"FFT_{filtro.upper()}_{tipo.upper()}")
+
+        self.spectrum_window = SpectrumWindow(
+            original_rgb=img,
+            magnitud_arr=magnitud,
+            fase_arr=fase,
+            mask_arr=mask,
+            filtrada_rgb=filtrada_rgb,
+            filtro=filtro.capitalize(),
+            tipo=tipo_label,
+            cutoff=cutoff,
+            orden=orden,
+            psnr=psnr,
+        )
+        self.spectrum_window.show()
+        self.view.show_status(
+            f"FFT {filtro} {tipo_label}  cutoff={cutoff:.2f}  "
+            f"orden={orden}  PSNR={psnr:.2f} dB"
+        )
+
+    def compare_fft_filters(self):
+        """Aplica los 6 filtros (3 tipos × 2 polaridades) y abre ResultsWindow."""
+        if not self._require_image():
+            return
+        img = self.model.get_image(self.current_image)
+        _, _, cutoff, orden = self._fft_params()
+
+        resultados = p5.espectro_todas_combinaciones(img, cutoff=cutoff, orden=orden)
+        original   = img
+
+        cards = [
+            {"title": "Original", "img": original, "badge": "espectro",
+             "extra_info": "imagen de referencia"},
+        ] + [
+            {"title": nombre, "img": img_r, "badge": "filtro",
+             "extra_info": f"cutoff={cutoff:.2f}  orden={orden}"}
+            for nombre, img_r in resultados.items()
+        ]
+
+        self.results_window = ResultsWindow(
+            title="Práctica 5 — Comparativa de 6 filtros FFT",
+            ref_img=original,
+            cards_data=cards,
+            left_title="Imagen original",
+            left_info=[
+                ("Cutoff",   f"{cutoff:.2f}"),
+                ("Orden BW", str(orden)),
+                ("Filtros",  "Ideal · Gaussiano · Butterworth"),
+                ("Tipos",    "Pasa bajas · Pasa altas"),
+            ],
+            cols=3,
+        )
+        self.results_window.show()
+        self.view.show_status(
+            f"Comparativa FFT: 6 filtros  cutoff={cutoff:.2f}  orden={orden}"
+        )
+
+    # ── Parte B: DCT ─────────────────────────────────────────────────
+
+    def apply_dct_compression(self):
+        """Aplica compresión DCT con el q_factor del sidebar."""
+        if not self._require_image():
+            return
+        img      = self.model.get_image(self.current_image)
+        q_factor = self._dct_q_factor()
+
+        rec_rgb, psnr = p5.dct_compresion(img, q_factor=q_factor)
+
+        self.view.show_result(rec_rgb)
+        self._store_result(rec_rgb, f"DCT_Q{int(q_factor*100):03d}")
+
+        cards = [
+            {"title": "Original", "img": img, "badge": "original",
+             "extra_info": "sin compresión"},
+            {"title": f"DCT reconstruida  q={q_factor:.2f}",
+             "img": rec_rgb, "badge": "resultado",
+             "extra_info": f"PSNR = {psnr:.2f} dB"},
+        ]
+        self.results_window = ResultsWindow(
+            title=f"Práctica 5 — Compresión DCT  q={q_factor:.2f}",
+            ref_img=img,
+            cards_data=cards,
+            left_title="Imagen original",
+            left_info=[
+                ("q_factor",  f"{q_factor:.2f}"),
+                ("PSNR",      f"{psnr:.2f} dB"),
+                ("Bloques",   "8 × 8 px"),
+                ("Tabla Q",   "Luminancia JPEG × q"),
+            ],
+            cols=2,
+        )
+        self.results_window.show()
+        self.view.show_status(
+            f"DCT compresión  q_factor={q_factor:.2f}  PSNR={psnr:.2f} dB"
+        )
+
+    def compare_dct_q_factors(self):
+        """Aplica DCT con 4 valores de q_factor y los muestra en grid comparativo."""
+        if not self._require_image():
+            return
+        img = self.model.get_image(self.current_image)
+        q_vals = (0.3, 0.5, 1.0, 1.5)
+
+        resultados = p5.dct_comparativa(img, q_values=q_vals)
+
+        # Guardar último resultado en la vista
+        last_q  = q_vals[-1]
+        last_rgb, last_psnr = resultados[last_q]
+        self.view.show_result(last_rgb)
+        self._store_result(last_rgb, "DCT_COMPARATIVA")
+
+        cards = [
+            {"title": "Original",
+             "img": img, "badge": "original",
+             "extra_info": "sin compresión"},
+        ] + [
+            {"title": f"q = {q:.2f}",
+             "img": rec,
+             "badge": "resultado",
+             "extra_info": f"PSNR = {psnr:.2f} dB"}
+            for q, (rec, psnr) in resultados.items()
+        ]
+
+        best_q  = min(resultados, key=lambda q: abs(resultados[q][1] - max(v[1] for v in resultados.values())))
+        best_psnr = resultados[best_q][1]
+
+        self.results_window = ResultsWindow(
+            title="Práctica 5 — Comparativa DCT  (q = 0.3 · 0.5 · 1.0 · 1.5)",
+            ref_img=img,
+            cards_data=cards,
+            left_title="Imagen original",
+            left_info=[
+                ("q mínimo",    "0.3  → más calidad"),
+                ("q máximo",    "1.5  → más compresión"),
+                ("Mejor PSNR",  f"q={best_q:.1f}  →  {best_psnr:.2f} dB"),
+                ("Bloques",     "8 × 8 px"),
+            ],
+            cols=3,
+        )
+        self.results_window.show()
+        self.view.show_status(
+            "Comparativa DCT: q = 0.3 / 0.5 / 1.0 / 1.5"
+        )
+
+    # ══════════════════════════════════════════════════════════════════════
+    # HISTORIAL DE IMÁGENES PROCESADAS
+    # ══════════════════════════════════════════════════════════════════════
+
+    def open_history(self):
+        """Abre la ventana de historial. Si ya está abierta la trae al frente."""
+        if self.history_window is not None and self.history_window.isVisible():
+            self.history_window.refresh()
+            self.history_window.raise_()
+            self.history_window.activateWindow()
+            return
+
+        self.history_window = HistoryWindow(
+            history=self.history,
+            on_show_original=self._history_show_original,
+            on_show_compare=self._history_show_compare,
+            on_use_as_base=self._history_use_as_base,
+        )
+        self.history_window.show()
+        self.view.show_status(
+            f"Historial abierto — {len(self.history)} entrada(s)"
+        )
+
+    def _history_show_original(self, img_rgb: np.ndarray):
+        """Muestra una imagen del historial en la pestaña Original."""
+        self.view.show_original(img_rgb)
+        self.view._switch_tab(0)
+        self.view.show_status("Imagen del historial → pestaña Original")
+
+    def _history_show_compare(self, img_rgb: np.ndarray):
+        """Muestra una imagen del historial en el panel Comparar (lado resultado)."""
+        self.view._view_result.set_image(img_rgb)
+        self.view._cmp_result.set_image(img_rgb)
+        self.view._switch_tab(2)
+        self.view.show_status("Imagen del historial → pestaña Comparar")
+
+    def _history_use_as_base(self, img_rgb: np.ndarray, key: str):
+        """Carga una imagen del historial como resultado activo para continuar procesando."""
+        if not self.current_image:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self.view, "Sin imagen base",
+                "Carga primero una imagen para asociar este resultado."
+            )
+            return
+        # Almacena la imagen del historial como resultado activo con clave derivada
+        new_key = f"HIST_{key}"
+        self._store_result(img_rgb, new_key)
+        self.view.show_result(img_rgb)
+        self.view.show_status(
+            f"Imagen del historial cargada como base activa — ({new_key})"
         )

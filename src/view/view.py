@@ -714,10 +714,178 @@ class MainWindow(QMainWindow):
 
         inner_layout.addWidget(sec_morph)
 
+        # ── Sección: Práctica 5 — Dominio de la Frecuencia ───────────
+        sec_freq = SidebarSection("5  Dominio Frecuencia")
+
+        # ---- Parte A: FFT ----
+        lbl_fft = QLabel("  Parte A — FFT y filtrado")
+        lbl_fft.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 10px; padding: 4px 0 0;")
+        sec_freq.add_widget(lbl_fft)
+
+        # Fila 1: tipo de filtro + polaridad
+        fft_cfg1 = QWidget()
+        fft_cfg1.setStyleSheet("background: transparent;")
+        fc1_layout = QHBoxLayout(fft_cfg1)
+        fc1_layout.setContentsMargins(12, 2, 12, 2)
+        fc1_layout.setSpacing(6)
+        lbl_ftype = QLabel("Filtro")
+        lbl_ftype.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 11px;")
+        self.fft_filtro_combo = _sidebar_combo(["Butterworth", "Ideal", "Gaussiano"])
+        self.fft_tipo_combo   = _sidebar_combo(["Pasa bajas", "Pasa altas"])
+        fc1_layout.addWidget(lbl_ftype)
+        fc1_layout.addWidget(self.fft_filtro_combo)
+        fc1_layout.addWidget(self.fft_tipo_combo)
+        sec_freq.add_widget(fft_cfg1)
+
+        # Fila 2: cutoff slider
+        fft_co_row = QWidget()
+        fft_co_row.setStyleSheet("background: transparent;")
+        fco_layout = QHBoxLayout(fft_co_row)
+        fco_layout.setContentsMargins(12, 2, 12, 2)
+        fco_layout.setSpacing(6)
+        lbl_co = QLabel("Cutoff")
+        lbl_co.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 11px;")
+        self.fft_cutoff_slider = QSlider(Qt.Horizontal)
+        self.fft_cutoff_slider.setRange(1, 49)   # 0.01 – 0.49
+        self.fft_cutoff_slider.setValue(15)       # 0.15 por defecto
+        self.fft_cutoff_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                background: {SIDEBAR_BORDER}; height: 3px; border-radius: 2px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {ACCENT}; width: 12px; height: 12px;
+                margin: -5px 0; border-radius: 6px;
+            }}
+            QSlider::sub-page:horizontal {{ background: {ACCENT}; border-radius: 2px; }}
+        """)
+        self.fft_cutoff_label = QLabel("0.15")
+        self.fft_cutoff_label.setFixedWidth(34)
+        self.fft_cutoff_label.setStyleSheet(f"color: {SIDEBAR_TEXT_HI}; font-size: 11px;")
+        self.fft_cutoff_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.fft_cutoff_slider.valueChanged.connect(
+            lambda v: self.fft_cutoff_label.setText(f"{v/100:.2f}")
+        )
+        fco_layout.addWidget(lbl_co)
+        fco_layout.addWidget(self.fft_cutoff_slider)
+        fco_layout.addWidget(self.fft_cutoff_label)
+        sec_freq.add_widget(fft_co_row)
+
+        # Fila 3: orden Butterworth
+        fft_ord_row = QWidget()
+        fft_ord_row.setStyleSheet("background: transparent;")
+        ford_layout = QHBoxLayout(fft_ord_row)
+        ford_layout.setContentsMargins(12, 2, 12, 2)
+        ford_layout.setSpacing(6)
+        lbl_ord = QLabel("Orden BW")
+        lbl_ord.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 11px;")
+        self.fft_orden_combo = _sidebar_combo(["1", "2", "4", "6", "8"])
+        self.fft_orden_combo.setCurrentIndex(1)   # orden 2 por defecto
+        ford_layout.addWidget(lbl_ord)
+        ford_layout.addWidget(self.fft_orden_combo)
+        ford_layout.addStretch()
+        sec_freq.add_widget(fft_ord_row)
+
+        # Botones FFT
+        fft_btn_row = QWidget()
+        fft_btn_row.setStyleSheet("background: transparent;")
+        fb_layout = QHBoxLayout(fft_btn_row)
+        fb_layout.setContentsMargins(12, 4, 12, 4)
+        fb_layout.setSpacing(4)
+        self.btn_fft_espectro  = _mini_button("Espectro")
+        self.btn_fft_filtrar   = _mini_button("Filtrar")
+        self.btn_fft_comparar  = _mini_button("Comparar 6")
+        fb_layout.addWidget(self.btn_fft_espectro)
+        fb_layout.addWidget(self.btn_fft_filtrar)
+        fb_layout.addWidget(self.btn_fft_comparar)
+        sec_freq.add_widget(fft_btn_row)
+
+        # ---- Parte B: DCT ----
+        lbl_dct = QLabel("  Parte B — DCT compresión")
+        lbl_dct.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 10px; padding: 6px 0 0;")
+        sec_freq.add_widget(lbl_dct)
+
+        # q_factor slider
+        dct_q_row = QWidget()
+        dct_q_row.setStyleSheet("background: transparent;")
+        dq_layout = QHBoxLayout(dct_q_row)
+        dq_layout.setContentsMargins(12, 2, 12, 2)
+        dq_layout.setSpacing(6)
+        lbl_qf = QLabel("q_factor")
+        lbl_qf.setStyleSheet(f"color: {SIDEBAR_LABEL}; font-size: 11px;")
+        self.dct_q_slider = QSlider(Qt.Horizontal)
+        self.dct_q_slider.setRange(10, 200)   # 0.10 – 2.00
+        self.dct_q_slider.setValue(50)         # 0.50 por defecto
+        self.dct_q_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                background: {SIDEBAR_BORDER}; height: 3px; border-radius: 2px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {ACCENT}; width: 12px; height: 12px;
+                margin: -5px 0; border-radius: 6px;
+            }}
+            QSlider::sub-page:horizontal {{ background: {ACCENT}; border-radius: 2px; }}
+        """)
+        self.dct_q_label = QLabel("0.50")
+        self.dct_q_label.setFixedWidth(34)
+        self.dct_q_label.setStyleSheet(f"color: {SIDEBAR_TEXT_HI}; font-size: 11px;")
+        self.dct_q_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.dct_q_slider.valueChanged.connect(
+            lambda v: self.dct_q_label.setText(f"{v/100:.2f}")
+        )
+        dq_layout.addWidget(lbl_qf)
+        dq_layout.addWidget(self.dct_q_slider)
+        dq_layout.addWidget(self.dct_q_label)
+        sec_freq.add_widget(dct_q_row)
+
+        # Botones DCT
+        dct_btn_row = QWidget()
+        dct_btn_row.setStyleSheet("background: transparent;")
+        db_layout = QHBoxLayout(dct_btn_row)
+        db_layout.setContentsMargins(12, 4, 12, 6)
+        db_layout.setSpacing(4)
+        self.btn_dct_comprimir  = _mini_button("Comprimir")
+        self.btn_dct_comparar   = _mini_button("Comp. 4Q")
+        db_layout.addWidget(self.btn_dct_comprimir)
+        db_layout.addWidget(self.btn_dct_comparar)
+        db_layout.addStretch()
+        sec_freq.add_widget(dct_btn_row)
+
+        inner_layout.addWidget(sec_freq)
+
         # ── Sección: Análisis ─────────────────────────────────────────
         sec_analysis = SidebarSection("Análisis")
         self.btn_hist = _sidebar_button("  Histograma detallado")
         sec_analysis.add_widget(self.btn_hist)
+
+        # Botón historial con badge de contador
+        hist_row = QWidget()
+        hist_row.setStyleSheet("background: transparent;")
+        hr_layout = QHBoxLayout(hist_row)
+        hr_layout.setContentsMargins(12, 2, 12, 4)
+        hr_layout.setSpacing(6)
+        self.btn_history = QPushButton("  🕓  Historial")
+        self.btn_history.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent; color: {SIDEBAR_TEXT};
+                border: none; border-radius: 4px;
+                padding: 6px 14px; font-size: 12px; text-align: left;
+            }}
+            QPushButton:hover {{
+                background: {SIDEBAR_HOVER}; color: {SIDEBAR_TEXT_HI};
+            }}
+            QPushButton:pressed {{ background: {SIDEBAR_ACTIVE}; }}
+        """)
+        self._history_badge = QLabel("0")
+        self._history_badge.setFixedSize(22, 16)
+        self._history_badge.setAlignment(Qt.AlignCenter)
+        self._history_badge.setStyleSheet(f"""
+            background: #4a9eff; color: #fff;
+            border-radius: 8px; font-size: 9px; font-weight: 700;
+        """)
+        hr_layout.addWidget(self.btn_history, stretch=1)
+        hr_layout.addWidget(self._history_badge)
+        sec_analysis.add_widget(hist_row)
+
         inner_layout.addWidget(sec_analysis)
 
         # ── Histograma en vivo ────────────────────────────────────────
@@ -938,6 +1106,15 @@ class MainWindow(QMainWindow):
         """Guarda el nombre de imagen para mostrarlo en el footer."""
         self._current_image_name = name
 
+    def update_history_badge(self, count: int):
+        """Actualiza el número del badge del botón de historial."""
+        self._history_badge.setText(str(count))
+        color = "#4a9eff" if count == 0 else "#ff9944" if count < 10 else "#6bffa0"
+        self._history_badge.setStyleSheet(
+            f"background: {color}; color: #fff;"
+            f"border-radius: 8px; font-size: 9px; font-weight: 700;"
+        )
+
     # ── Señales ──────────────────────────────────────────────────────────────
 
     def _connect_signals(self):
@@ -957,6 +1134,7 @@ class MainWindow(QMainWindow):
             lambda: self.controller.apply_binary("adaptive")
         )
         self.btn_hist.clicked.connect(self.controller.show_histogram)
+        self.btn_history.clicked.connect(self.controller.open_history)
         self.threshold_slider.valueChanged.connect(
             lambda v: self.threshold_label.setText(str(v))
         )
@@ -1067,4 +1245,21 @@ class MainWindow(QMainWindow):
         )
         self.btn_smooth.clicked.connect(
             lambda: self.controller.apply_morph_op("smooth")
+        )
+
+        # ── 5 Dominio de la Frecuencia (FFT + DCT) ───────────────────
+        self.btn_fft_espectro.clicked.connect(
+            self.controller.show_fft_spectrum
+        )
+        self.btn_fft_filtrar.clicked.connect(
+            self.controller.apply_fft_filter
+        )
+        self.btn_fft_comparar.clicked.connect(
+            self.controller.compare_fft_filters
+        )
+        self.btn_dct_comprimir.clicked.connect(
+            self.controller.apply_dct_compression
+        )
+        self.btn_dct_comparar.clicked.connect(
+            self.controller.compare_dct_q_factors
         )
